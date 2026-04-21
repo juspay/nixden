@@ -17,8 +17,10 @@ start vm=name:
 # Apply our NixOS + home-manager config inside the VM (idempotent)
 [group('lifecycle')]
 provision vm=name:
-    {{nix_shell}} limactl shell {{vm}} -- sudo nixos-rebuild switch --flake $(pwd)#devbox
-    {{nix_shell}} limactl shell {{vm}} -- nix run $(pwd)#home-manager -- switch --flake $(pwd)#{{username}}
+    # `--workdir /tmp` keeps CWD off the Users-<user>.mount 9p mount so
+    # switch-to-configuration can restart that mount without a busy-target error.
+    {{nix_shell}} limactl shell --workdir /tmp {{vm}} -- sudo nixos-rebuild switch --flake $(pwd)#devbox
+    {{nix_shell}} limactl shell --workdir /tmp {{vm}} -- nix run $(pwd)#home-manager -- switch --flake $(pwd)#{{username}}
 
 # Stop the VM
 [group('lifecycle')]
