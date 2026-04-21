@@ -2,6 +2,8 @@
 
 {
   home.username = username;
+  # Lima convention: the guest user's home lives at /home/<user>.guest.
+  # (Lima also mounts the host's /Users/<user> into the guest at the same path.)
   home.homeDirectory = "/home/${username}.guest";
   home.stateVersion = "25.11";
 
@@ -15,6 +17,9 @@
   };
 
   programs.btop.enable = true;
+
+  # `gh` CLI — useful for agentic GitHub work (issues, PRs, reviews) from
+  # the VM without leaving the shell.
   programs.gh.enable = true;
 
   services.vscode-server.enable = true;
