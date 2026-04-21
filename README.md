@@ -18,12 +18,13 @@ just provision    # re-apply the flake (after editing config)
 just shell        # open a shell in the VM
 just stop         # stop the VM
 just delete       # remove the VM
+just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
 First `just start` takes a few minutes: it boots the stock `github:nixos-lima` image, then `nixos-rebuild switch` applies our [`flake.nix`](flake.nix) on top (system + home-manager in one shot).
 
-The VM user and hostname default to your macOS `$USER` / `devbox`.
+The VM user and hostname default to your macOS `$USER` / `devbox`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
 ## What's in the VM
 
