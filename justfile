@@ -48,6 +48,12 @@ stop vm=name:
 delete vm=name:
     {{nix_shell}} limactl delete {{vm}}
 
+# Wipe the VM and start fresh (leading `-` tolerates a non-existent VM)
+[group('lifecycle')]
+recreate vm=name:
+    -{{nix_shell}} limactl delete --force {{vm}}
+    just start {{vm}}
+
 # List all Lima VMs
 [group('lifecycle')]
 list:

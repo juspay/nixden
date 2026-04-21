@@ -18,6 +18,7 @@ just provision    # re-apply the flake (after editing config)
 just shell        # open a shell in the VM
 just stop         # stop the VM
 just delete       # remove the VM
+just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
