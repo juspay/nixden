@@ -29,7 +29,7 @@ The VM user and hostname default to your macOS `$USER` / `devbox`.
 
 System (via [`nixos/configuration.nix`](nixos/configuration.nix)): `nix-ld`, flakes, passwordless `wheel` sudo, `systemd-logind` lingering for the user, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server).
 
-User (via [`home/home.nix`](home/home.nix)): `starship`, `direnv` + `nix-direnv`, `btop`, `gh`.
+User (via [`home/home.nix`](home/home.nix)): `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
 
 ## SSH access
 
@@ -38,6 +38,15 @@ just ssh                # SSH into the VM (uses Lima's generated config, no glob
 just ssh uname -a       # run a command over SSH
 just ssh-config         # print Lima's generated SSH config
 ```
+
+## VSCode Remote-SSH
+
+Point VSCode at Lima's generated SSH config — no `~/.ssh/config` mutation, no tunnel service:
+
+1. `Cmd-Shift-P` → **Remote-SSH: Settings** → set **Config File** to `~/.lima/devbox/ssh.config`.
+2. `Cmd-Shift-P` → **Remote-SSH: Connect to Host…** → pick `lima-devbox`.
+
+That's the whole setup. Subsequent connects are one command.
 
 ## Working on projects inside the VM
 

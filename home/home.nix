@@ -23,6 +23,8 @@
 
   programs.btop.enable = true;
 
+  programs.just.enable = true;
+
   # `gh` CLI — useful for agentic GitHub work (issues, PRs, reviews) from
   # the VM without leaving the shell.
   programs.gh.enable = true;
