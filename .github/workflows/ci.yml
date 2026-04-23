@@ -6,23 +6,48 @@ on:
   pull_request:
 
 jobs:
-  build:
+  arm-macbook-workflow:
     runs-on: x86_64-linux
-    strategy:
-      fail-fast: false
-      matrix:
-        system:
-          - x86_64-linux
-          - aarch64-linux
     env:
       NIX_CONFIG: |
         experimental-features = nix-command flakes
         accept-flake-config = true
+      DEVBOX_ARTIFACTS_DIR: ${{ runner.temp }}/devbox-artifacts
+      DEVBOX_EXCHANGE_DIR: ${{ runner.temp }}/devbox-exchange
+      DEVBOX_TARGET_SYSTEM: aarch64-linux
+      DEVBOX_LIMA_ARCH: aarch64
+      DEVBOX_VM: devbox-ci-aarch64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Build NixOS system
-        run: nix build --no-link --print-out-paths ".#nixosConfigurations.devbox-${{ matrix.system }}.config.system.build.toplevel"
+      - name: Build image through Lima workflow
+        run: |
+          nix shell nixpkgs#lima nixpkgs#just -c just \
+            --set cpus 4 \
+            --set memory 8 \
+            --set disk 40 \
+            build-image "$DEVBOX_VM"
 
-      - name: Build Lima image
-        run: nix build --no-link --print-out-paths ".#packages.${{ matrix.system }}.devbox-image"
+      - name: Boot image through Lima workflow
+        run: |
+          nix shell nixpkgs#lima nixpkgs#just -c just \
+            --set cpus 4 \
+            --set memory 8 \
+            --set disk 40 \
+            start "$DEVBOX_VM"
+
+      - name: Smoke test VM
+        run: |
+          nix shell nixpkgs#lima -c limactl shell "$DEVBOX_VM" -- sh -lc '
+            set -eu
+            test "$(uname -m)" = aarch64
+            command -v direnv
+            command -v gh
+            command -v btop
+          '
+
+      - name: Cleanup Lima VMs
+        if: always()
+        run: |
+          nix shell nixpkgs#lima -c limactl delete --force "$DEVBOX_VM" || true
+          nix shell nixpkgs#lima -c limactl delete --force "$DEVBOX_VM-builder" || true

@@ -29,11 +29,22 @@ build-image vm=name:
     #!/usr/bin/env bash
     set -euo pipefail
     repo="$(pwd)"
-    case "$(uname -m)" in
-      arm64) linux_system="aarch64-linux" ;;
-      x86_64) linux_system="x86_64-linux" ;;
-      *) echo "Unsupported host architecture: $(uname -m)" >&2; exit 1 ;;
-    esac
+    linux_system="${DEVBOX_TARGET_SYSTEM:-}"
+    lima_arch="${DEVBOX_LIMA_ARCH:-}"
+    if [ -z "$linux_system" ]; then
+      case "$(uname -m)" in
+        arm64|aarch64) linux_system="aarch64-linux" ;;
+        x86_64) linux_system="x86_64-linux" ;;
+        *) echo "Unsupported host architecture: $(uname -m)" >&2; exit 1 ;;
+      esac
+    fi
+    if [ -z "$lima_arch" ]; then
+      case "$linux_system" in
+        aarch64-linux) lima_arch="aarch64" ;;
+        x86_64-linux) lima_arch="x86_64" ;;
+        *) echo "Unsupported target system: $linux_system" >&2; exit 1 ;;
+      esac
+    fi
     artifacts_dir="{{artifacts_dir}}"
     image_path="$artifacts_dir/{{vm}}.qcow2"
     template_path="$artifacts_dir/{{vm}}.yaml"
@@ -55,7 +66,7 @@ build-image vm=name:
       limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     }
     trap cleanup EXIT
-    limactl start --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --yes "$builder_template"
+    limactl start --arch="$lima_arch" --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --yes "$builder_template"
     just provision-system "$linux_system" "{{vm}}-builder"
     image_store_path="$(
       limactl shell --workdir "$repo" "{{vm}}-builder" -- \
@@ -81,6 +92,11 @@ start vm=name:
     repo="$(pwd)"
     artifacts_dir="{{artifacts_dir}}"
     template_path="$artifacts_dir/{{vm}}.yaml"
+    lima_arch="${DEVBOX_LIMA_ARCH:-}"
+    arch_args=()
+    if [ -n "$lima_arch" ]; then
+      arch_args=(--arch="$lima_arch")
+    fi
     mkdir -p "{{exchange_dir}}" "$artifacts_dir"
     if [ ! -f "$template_path" ]; then
       just build-image "{{vm}}"
@@ -92,7 +108,7 @@ start vm=name:
       for mount_spec in ${DEVBOX_EXTRA_MOUNTS:-}; do
         mount_args+=(--mount-only "$mount_spec")
       done
-      limactl start --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
+      limactl start "${arch_args[@]}" --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
     fi
 
 # Stop the VM
