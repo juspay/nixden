@@ -12,6 +12,7 @@ jobs:
       NIX_CONFIG: |
         experimental-features = nix-command flakes
         accept-flake-config = true
+      NIXPKGS_ALLOW_INSECURE: "1"
       DEVBOX_ARTIFACTS_DIR: /tmp/devbox-artifacts-${{ github.run_id }}
       DEVBOX_EXCHANGE_DIR: /tmp/devbox-exchange-${{ github.run_id }}
       DEVBOX_VM: devbox-ci-x86
@@ -19,7 +20,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install CI tools
-        run: nix profile install nixpkgs#just nixpkgs#lima
+        run: |
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.nix-profile/bin:$PATH"
+          command -v just >/dev/null || nix profile install nixpkgs#just
+          if ! command -v limactl >/dev/null; then
+            mkdir -p "$RUNNER_TEMP/bin"
+            cat > "$RUNNER_TEMP/bin/limactl" <<'EOF'
+          #!/usr/bin/env bash
+          exec nix shell --impure nixpkgs#lima -c limactl "$@"
+          EOF
+            chmod +x "$RUNNER_TEMP/bin/limactl"
+            echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          fi
 
       - name: Build image through justfile workflow
         run: just --set cpus 4 --set memory 8 --set disk 40 build-image "$DEVBOX_VM"
