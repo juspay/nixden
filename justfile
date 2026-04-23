@@ -52,6 +52,10 @@ build-image vm=name:
     if [ -z "$builder_template" ]; then
       builder_template="$repo/lima/builder.yaml.in"
     fi
+    start_args=()
+    if [ -n "${DEVBOX_LIMA_START_TIMEOUT:-}" ] && limactl start --help | grep -q -- '--timeout'; then
+      start_args+=(--timeout "$DEVBOX_LIMA_START_TIMEOUT")
+    fi
     mkdir -p "$artifacts_dir"
     limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     cleanup() {
@@ -74,7 +78,7 @@ build-image vm=name:
       mount_args=(--mount "$repo")
     fi
     limactl create --arch="$lima_arch" --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$builder_template"
-    limactl start "{{vm}}-builder"
+    limactl start "${start_args[@]}" "{{vm}}-builder"
     just provision-system "$linux_system" "{{vm}}-builder"
     image_store_path="$(
       limactl shell --workdir "$repo" "{{vm}}-builder" -- \
@@ -102,15 +106,19 @@ start vm=name:
     template_path="$artifacts_dir/{{vm}}.yaml"
     lima_arch="${DEVBOX_LIMA_ARCH:-}"
     arch_args=()
+    start_args=()
     if [ -n "$lima_arch" ]; then
       arch_args=(--arch="$lima_arch")
+    fi
+    if [ -n "${DEVBOX_LIMA_START_TIMEOUT:-}" ] && limactl start --help | grep -q -- '--timeout'; then
+      start_args+=(--timeout "$DEVBOX_LIMA_START_TIMEOUT")
     fi
     mkdir -p "{{exchange_dir}}" "$artifacts_dir"
     if [ ! -f "$template_path" ]; then
       just build-image "{{vm}}"
     fi
     if [ -d "$HOME/.lima/{{vm}}" ]; then
-      limactl start "{{vm}}"
+      limactl start "${start_args[@]}" "{{vm}}"
     else
       mount_args=()
       if limactl start --help | grep -q -- '--mount-only'; then
@@ -124,7 +132,7 @@ start vm=name:
           mount_args+=(--mount "$mount_spec")
         done
       fi
-      limactl start "${arch_args[@]}" --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
+      limactl start "${start_args[@]}" "${arch_args[@]}" --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
     fi
 
 # Stop the VM
