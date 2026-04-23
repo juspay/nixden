@@ -15,13 +15,28 @@
 
   outputs = inputs@{ nixpkgs, nixos-lima, ... }:
     let
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forEach = nixpkgs.lib.genAttrs;
+      base = import ./default.nix inputs;
     in
-    (import ./default.nix inputs) // {
-      devShells = forEach darwinSystems (system: {
-        default = import ./shell.nix { pkgs = nixpkgs.legacyPackages.${system}; };
-      });
+    base // {
+      devShells = forEach systems (system:
+        let pkgs = nixpkgs.legacyPackages.${system}; in {
+          default = import ./shell.nix { inherit pkgs; };
+          ci = pkgs.mkShell {
+            packages = with pkgs; [
+              coreutils
+              gh
+              qemu
+            ];
+          };
+        });
 
       # Lima template YAML, pinned to our locked nixos-lima input. Passes
       # through unmodified today; to apply local overrides (e.g. writable
