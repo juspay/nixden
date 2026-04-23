@@ -8,7 +8,6 @@ let
         nixos-lima.nixosModules.lima
         nixos-vscode-server.nixosModules.default
         ./nixos/configuration.nix
-        ./nixos/release-images.nix
       ];
     };
 
