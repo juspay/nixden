@@ -16,6 +16,8 @@ The host only needs `limactl` and `just`. Nix runs inside the VM:
 
 No host-side Nix install is required for normal use.
 
+The recipes support both newer Lima versions with `--mount-only` and older versions that only have `--mount`.
+
 ## Usage
 
 ```sh

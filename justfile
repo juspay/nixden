@@ -66,7 +66,13 @@ build-image vm=name:
       limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     }
     trap cleanup EXIT
-    limactl start --arch="$lima_arch" --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --yes "$builder_template"
+    mount_args=()
+    if limactl start --help | grep -q -- '--mount-only'; then
+      mount_args=(--mount-only "$repo")
+    else
+      mount_args=(--mount-none --mount "$repo")
+    fi
+    limactl start --arch="$lima_arch" --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$builder_template"
     just provision-system "$linux_system" "{{vm}}-builder"
     image_store_path="$(
       limactl shell --workdir "$repo" "{{vm}}-builder" -- \
@@ -104,10 +110,18 @@ start vm=name:
     if [ -d "$HOME/.lima/{{vm}}" ]; then
       limactl start "{{vm}}"
     else
-      mount_args=(--mount-only "$repo" --mount-only "{{exchange_dir}}:w")
-      for mount_spec in ${DEVBOX_EXTRA_MOUNTS:-}; do
-        mount_args+=(--mount-only "$mount_spec")
-      done
+      mount_args=()
+      if limactl start --help | grep -q -- '--mount-only'; then
+        mount_args=(--mount-only "$repo" --mount-only "{{exchange_dir}}:w")
+        for mount_spec in ${DEVBOX_EXTRA_MOUNTS:-}; do
+          mount_args+=(--mount-only "$mount_spec")
+        done
+      else
+        mount_args=(--mount-none --mount "$repo" --mount "{{exchange_dir}}:w")
+        for mount_spec in ${DEVBOX_EXTRA_MOUNTS:-}; do
+          mount_args+=(--mount "$mount_spec")
+        done
+      fi
       limactl start "${arch_args[@]}" --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
     fi
 
