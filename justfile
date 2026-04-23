@@ -52,11 +52,18 @@ build-image vm=name:
     if [ -z "$builder_template" ]; then
       builder_template="$repo/lima/builder.yaml.in"
     fi
+    mkdir -p "$artifacts_dir"
+    if [ "${DEVBOX_HOST_BUILD_IMAGE:-}" = "1" ]; then
+      image_store_path="$(nix build --no-link --print-out-paths "$repo#packages.$linux_system.devbox-image")"
+      rm -f "$image_path"
+      cp "$image_store_path" "$image_path"
+      sed "s|__IMAGE_LOCATION__|file://$image_path|g" "$repo/lima/local-image.yaml.in" > "$template_path"
+      exit 0
+    fi
     start_args=()
     if [ -n "${DEVBOX_LIMA_START_TIMEOUT:-}" ] && limactl start --help | grep -q -- '--timeout'; then
       start_args+=(--timeout "$DEVBOX_LIMA_START_TIMEOUT")
     fi
-    mkdir -p "$artifacts_dir"
     limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     cleanup() {
       status="$?"

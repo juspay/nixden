@@ -15,6 +15,7 @@ The host only needs `limactl` and `just`. Nix runs inside the VM:
 - [`just`](https://github.com/casey/just)
 
 No host-side Nix install is required for normal use.
+Linux CI can set `DEVBOX_HOST_BUILD_IMAGE=1` to build the qcow2 with host Nix before boot-testing it with Lima.
 
 The recipes support both newer Lima versions with `--mount-only` and older versions that only have `--mount`.
 On slow QEMU hosts, set `DEVBOX_LIMA_START_TIMEOUT` to extend Lima's VM readiness wait.
