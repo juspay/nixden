@@ -6,8 +6,8 @@ The host only needs `limactl` and `just`. Nix runs inside the VM:
 
 - A temporary builder VM builds a local qcow2 image from this flake.
 - The working VM boots directly from that local image.
-- User Home Manager state is not baked into the image.
-- [`home/home.nix`](home/home.nix) stays user-editable on the host and is applied explicitly with `just home-switch`.
+- Devbox tools and services are baked into the NixOS image.
+- Users can add personal packages later with `nix profile install nixpkgs#...`.
 
 ## Requirements
 
@@ -22,7 +22,6 @@ No host-side Nix install is required for normal use.
 just              # list recipes
 just build-image  # build/update the local qcow2 via a temporary builder VM
 just start        # boot the working VM from the local qcow2
-just home-switch  # apply home/home.nix inside the running VM
 just shell        # open a shell in the VM
 just stop         # stop the VM
 just delete       # remove the VM
@@ -36,18 +35,21 @@ Image artifacts live outside `~/.lima` by default, under `~/Library/Caches/devbo
 
 ## What Lives Where
 
-System image:
+Base image config:
 
 - Defined by [`nixos/configuration.nix`](nixos/configuration.nix)
-- Built inside a temporary Lima builder VM
-- Includes `home-manager`, `git`, `just`, `direnv`, `nix-direnv`, `starship`, and the rest of the machine-level setup
+- Contains Lima/NixOS plumbing such as guest integration, SSH, sudo, boot, and filesystem settings
 
-User home config:
+Devbox config:
 
-- Defined by [`home/home.nix`](home/home.nix)
-- Not baked into the qcow2
-- Applied on demand with `just home-switch`
-- Uses the guest's current `$USER` and `$HOME` during activation
+- Defined by [`nixos/devbox.nix`](nixos/devbox.nix)
+- Includes `btop`, `gh`, `git`, `just`, `vim`, `direnv`, `nix-direnv`, `starship`, `nix-ld`, and VS Code server support
+
+User tools:
+
+- Not managed by this repo
+- Install ad hoc tools inside the guest with commands like `nix profile install nixpkgs#ripgrep`
+- For declarative packages and dotfiles, use Home Manager from your own config repo; [`juspay/nixos-unified-template`](https://github.com/juspay/nixos-unified-template) is the recommended starting point
 
 ## Working on Projects
 
@@ -60,33 +62,27 @@ It does not mount your full macOS home by default.
 
 That means:
 
-- Edit [`home/home.nix`](home/home.nix) on the host
-- Run `just home-switch` when you want to apply it
 - Keep active repos inside the guest filesystem, for example `~/code`
 - Use `~/Shared/devbox-exchange` only for intentional file transfer
+- Use `nix profile install nixpkgs#...` for personal tools that do not belong in the base image
+- Use a separate Home Manager config for declarative packages, shell config, Git config, and dotfiles
 
 Example:
 
 ```sh
 just start
-just home-switch
 just ssh mkdir -p ~/code
 just ssh 'cd ~/code && git clone ...'
+just ssh nix profile install nixpkgs#ripgrep
 ```
 
 ## Refreshing Changes
 
-After editing [`nixos/configuration.nix`](nixos/configuration.nix):
+After editing [`nixos/configuration.nix`](nixos/configuration.nix) or [`nixos/devbox.nix`](nixos/devbox.nix):
 
 ```sh
 just build-image
 just recreate
-```
-
-After editing [`home/home.nix`](home/home.nix):
-
-```sh
-just home-switch
 ```
 
 If you already have an older VM from the previous workflow, run `just recreate` once to pick up the new mount defaults and local-image boot flow.
@@ -105,12 +101,12 @@ just ssh uname -a
 just ssh-config
 ```
 
-## VSCode Remote-SSH
+## VS Code Remote-SSH
 
-Point VSCode at Lima's generated SSH config:
+Point VS Code at Lima's generated SSH config:
 
-1. `Cmd-Shift-P` → **Remote-SSH: Settings** → set **Config File** to `~/.lima/devbox/ssh.config`
-2. `Cmd-Shift-P` → **Remote-SSH: Connect to Host…** → pick `lima-devbox`
+1. `Cmd-Shift-P` -> **Remote-SSH: Settings** -> set **Config File** to `~/.lima/devbox/ssh.config`
+2. `Cmd-Shift-P` -> **Remote-SSH: Connect to Host...** -> pick `lima-devbox`
 
 ## Security Posture
 

@@ -23,8 +23,7 @@ default:
 
 # --- Lifecycle ---
 
-# Build a local qcow2 image inside a temporary NixOS builder VM. This keeps
-# Nix off the host while still producing a pinned image from our flake.
+# Build a local qcow2 image inside a temporary NixOS builder VM
 [group('lifecycle')]
 build-image vm=name:
     #!/usr/bin/env bash
@@ -63,8 +62,7 @@ provision-system linux_system vm=name:
     repo="$(pwd)"
     limactl shell --workdir /tmp "{{vm}}" -- sudo nixos-rebuild switch --flake "$repo#devbox-{{linux_system}}"
 
-# Create and start the working VM from the locally built qcow2. The VM sees
-# this repo read-only plus a single writable exchange directory by default.
+# Create and start the working VM from the locally built qcow2
 [group('lifecycle')]
 start vm=name:
     #!/usr/bin/env bash
@@ -119,16 +117,3 @@ ssh-config vm=name:
 [group('access')]
 ssh vm=name *args='':
     ssh -F ~/.lima/{{vm}}/ssh.config lima-{{vm}} {{args}}
-
-# Apply the standalone Home Manager config from the mounted repo.
-[group('access')]
-home-switch vm=name:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    repo="$(pwd)"
-    case "$(ssh -F "$HOME/.lima/{{vm}}/ssh.config" lima-{{vm}} uname -m)" in
-      aarch64|arm64) linux_system="aarch64-linux" ;;
-      x86_64) linux_system="x86_64-linux" ;;
-      *) echo "Unsupported guest architecture" >&2; exit 1 ;;
-    esac
-    ssh -F "$HOME/.lima/{{vm}}/ssh.config" lima-{{vm}} "home-manager switch --impure --flake '$repo#devbox-$linux_system'"

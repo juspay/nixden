@@ -1,14 +1,10 @@
 {
-  description = "devbox: NixOS based devbox on macOS (custom NixOS image + guest Home Manager on Lima)";
+  description = "devbox: NixOS based devbox on macOS (custom NixOS image on Lima)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-lima = {
       url = "github:nixos-lima/nixos-lima/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    home-manager = {
-      url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-vscode-server = {

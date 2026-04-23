@@ -1,31 +1,17 @@
-{ nixpkgs, nixos-lima, home-manager, nixos-vscode-server, ... }:
+{ nixpkgs, nixos-lima, nixos-vscode-server, ... }:
 
 let
-  lib = nixpkgs.lib;
   linuxSystems = [ "aarch64-linux" "x86_64-linux" ];
   configName = system: "devbox-${system}";
-  username =
-    let u = builtins.getEnv "USER";
-    in
-    if u == "" then
-      throw "USER env var not set — preserve USER and pass --impure when evaluating Home Manager."
-    else
-      u;
-  homeDirectory =
-    let h = builtins.getEnv "HOME";
-    in
-    if h == "" then
-      throw "HOME env var not set — preserve HOME and pass --impure when evaluating Home Manager."
-    else
-      h;
 
   mkNixosConfiguration = system:
     nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit home-manager nixos-vscode-server; };
       modules = [
         nixos-lima.nixosModules.lima
+        nixos-vscode-server.nixosModules.default
         ./nixos/configuration.nix
+        ./nixos/devbox.nix
       ];
     };
 
@@ -33,20 +19,6 @@ let
     (system: {
       name = configName system;
       value = mkNixosConfiguration system;
-    })
-    linuxSystems);
-
-  homeConfigurations = builtins.listToAttrs (map
-    (system: {
-      name = configName system;
-      value = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.${system};
-        extraSpecialArgs = { inherit username homeDirectory nixos-vscode-server; };
-        modules = [
-          nixos-vscode-server.homeModules.default
-          ./home/home.nix
-        ];
-      };
     })
     linuxSystems);
 
@@ -77,5 +49,5 @@ let
     linuxSystems);
 in
 {
-  inherit homeConfigurations nixosConfigurations packages;
+  inherit nixosConfigurations packages;
 }
