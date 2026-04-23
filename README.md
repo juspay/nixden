@@ -28,7 +28,7 @@ The VM user and hostname default to your macOS `$USER` / `devbox`. CPU / memory 
 
 ## What's in the VM
 
-Via [`nixos/configuration.nix`](nixos/configuration.nix): `nix-ld`, flakes, passwordless `wheel` sudo, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server), `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
+Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, passwordless `wheel` sudo, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server), `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
 
 ## SSH access
 

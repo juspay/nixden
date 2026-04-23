@@ -1,30 +1,15 @@
-{ config, lib, pkgs, modulesPath, ... }:
+{ lib, modulesPath, ... }:
 
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
+    ./devbox.nix
   ];
 
   # Enable Lima guest integration (lima-init: user creation from cidata,
   # ssh key install, mount setup from user-data, lima-guestagent service).
   # This is the only thing `nixos-lima.nixosModules.lima` actually provides.
   services.lima.enable = true;
-
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-  services.openssh.enable = true;
-  security.sudo.wheelNeedsPassword = false;
-
-  programs.starship.enable = true;
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
-
-  # Run random prebuilt Linux binaries (VSCode server is handled separately
-  # via nixos-vscode-server, but other tools benefit from nix-ld too).
-  programs.nix-ld.enable = true;
-  services.vscode-server.enable = true;
 
   # Boot/filesystem settings must match the stock nixos-lima qcow2 image.
   boot.loader.grub = {
@@ -42,15 +27,4 @@
     fsType = "ext4";
     options = [ "noatime" "nodiratime" "discard" ];
   };
-
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-
-  environment.systemPackages = with pkgs; [
-    btop
-    gh
-    just
-    vim
-  ];
-
-  system.stateVersion = "25.11";
 }
