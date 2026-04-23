@@ -37,6 +37,17 @@ build-image vm=name:
     artifacts_dir="{{artifacts_dir}}"
     image_path="$artifacts_dir/{{vm}}.qcow2"
     template_path="$artifacts_dir/{{vm}}.yaml"
+    builder_template="${DEVBOX_BUILDER_TEMPLATE:-}"
+    if [ -z "$builder_template" ]; then
+      nixos_lima_rev="$(
+        awk '
+          /"nixos-lima":/ { inNode = 1 }
+          inNode && /"locked":/ { inLocked = 1 }
+          inLocked && /"rev":/ { gsub(/[",]/, "", $2); print $2; exit }
+        ' "$repo/flake.lock"
+      )"
+      builder_template="https://raw.githubusercontent.com/nixos-lima/nixos-lima/$nixos_lima_rev/nixos.yaml"
+    fi
     mkdir -p "$artifacts_dir"
     limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     cleanup() {
@@ -44,7 +55,7 @@ build-image vm=name:
       limactl delete --force "{{vm}}-builder" >/dev/null 2>&1 || true
     }
     trap cleanup EXIT
-    limactl start --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --yes "$repo/lima/builder.yaml"
+    limactl start --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --yes "$builder_template"
     just provision-system "$linux_system" "{{vm}}-builder"
     image_store_path="$(
       limactl shell --workdir "$repo" "{{vm}}-builder" -- \
