@@ -31,15 +31,13 @@ jobs:
           if [ "${#missing_tools[@]}" -gt 0 ]; then
             nix profile install "${missing_tools[@]}"
           fi
-          if ! command -v limactl >/dev/null; then
-            mkdir -p "$RUNNER_TEMP/bin"
-            cat > "$RUNNER_TEMP/bin/limactl" <<'EOF'
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat > "$RUNNER_TEMP/bin/limactl" <<'EOF'
           #!/usr/bin/env bash
           exec nix shell --impure nixpkgs#lima -c limactl "$@"
           EOF
-            chmod +x "$RUNNER_TEMP/bin/limactl"
-            echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-          fi
+          chmod +x "$RUNNER_TEMP/bin/limactl"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Build image through justfile workflow
         run: just --set cpus 4 --set memory 8 --set disk 40 build-image "$DEVBOX_VM"
