@@ -17,7 +17,6 @@ jobs:
       DEVBOX_EXCHANGE_DIR: /tmp/devbox-exchange-${{ github.run_id }}
       DEVBOX_KEEP_FAILED_VM: "1"
       DEVBOX_VM: devbox-ci-x86
-      QEMU_SYSTEM_X86_64: qemu-system-x86_64 -accel tcg
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +39,16 @@ jobs:
           EOF
           chmod +x "$RUNNER_TEMP/bin/limactl"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          cat > "$RUNNER_TEMP/bin/qemu-system-x86_64-tcg" <<'EOF'
+          #!/usr/bin/env bash
+          args=()
+          for arg in "$@"; do
+            args+=("${arg//q35,accel=kvm/q35,accel=tcg}")
+          done
+          exec nix shell --impure nixpkgs#qemu -c qemu-system-x86_64 "${args[@]}"
+          EOF
+          chmod +x "$RUNNER_TEMP/bin/qemu-system-x86_64-tcg"
+          echo "QEMU_SYSTEM_X86_64=$RUNNER_TEMP/bin/qemu-system-x86_64-tcg" >> "$GITHUB_ENV"
 
       - name: Build image through justfile workflow
         run: just --set cpus 4 --set memory 8 --set disk 40 build-image "$DEVBOX_VM"
