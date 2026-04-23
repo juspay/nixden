@@ -23,7 +23,13 @@ jobs:
         run: |
           echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.nix-profile/bin:$PATH"
-          command -v just >/dev/null || nix profile install nixpkgs#just
+          missing_tools=()
+          command -v just >/dev/null || missing_tools+=(nixpkgs#just)
+          command -v awk >/dev/null || missing_tools+=(nixpkgs#gawk)
+          command -v sed >/dev/null || missing_tools+=(nixpkgs#gnused)
+          if [ "${#missing_tools[@]}" -gt 0 ]; then
+            nix profile install "${missing_tools[@]}"
+          fi
           if ! command -v limactl >/dev/null; then
             mkdir -p "$RUNNER_TEMP/bin"
             cat > "$RUNNER_TEMP/bin/limactl" <<'EOF'
