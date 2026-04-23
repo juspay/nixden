@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 on:
   push:
@@ -20,10 +20,8 @@ jobs:
             experimental-features = nix-command flakes
             accept-flake-config = true
 
-      # --impure is required because default.nix reads $USER via
-      # builtins.getEnv (the runner sets USER=runner, which is fine).
       - name: nix flake check
-        run: nix flake check --impure --show-trace
+        run: nix flake check --show-trace
 
       - name: build lima-template
         run: nix build --no-link --print-out-paths .#lima-template

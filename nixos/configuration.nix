@@ -1,4 +1,4 @@
-{ config, lib, pkgs, modulesPath, username, nixos-vscode-server, ... }:
+{ config, lib, pkgs, modulesPath, ... }:
 
 {
   imports = [
@@ -10,33 +10,21 @@
   # This is the only thing `nixos-lima.nixosModules.lima` actually provides.
   services.lima.enable = true;
 
-  # Lima creates the guest user imperatively via lima-init at first boot
-  # (useradd with the macOS host's UID). Declaring the user here without a
-  # UID lets NixOS's user module coexist: if the user already exists, the
-  # activation is a no-op — it just makes HM's NixOS module happy (HM reads
-  # `config.users.users.${name}.{name,home}`).
-  users.users.${username} = {
-    isNormalUser = true;
-    home = "/home/${username}.guest";
-    group = "users";
-    extraGroups = [ "wheel" ];
-    createHome = false;
-  };
-
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   services.openssh.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
+  programs.starship.enable = true;
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
+
   # Run random prebuilt Linux binaries (VSCode server is handled separately
   # via nixos-vscode-server, but other tools benefit from nix-ld too).
   programs.nix-ld.enable = true;
-
-  # Persist user systemd services (vscode-server, future `code tunnel`)
-  # across logouts / reboots without requiring an active login session.
-  systemd.tmpfiles.rules = [
-    "f /var/lib/systemd/linger/${username} 0644 root root -"
-  ];
+  services.vscode-server.enable = true;
 
   # Boot/filesystem settings must match the stock nixos-lima qcow2 image.
   boot.loader.grub = {
@@ -57,20 +45,12 @@
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  environment.systemPackages = with pkgs; [ vim ];
-
-  # Apply home-manager as part of this system's activation so a single
-  # `nixos-rebuild switch` provisions both system and user config.
-  home-manager = {
-    useGlobalPkgs = true;
-    # Lima manages the guest user's home imperatively; avoid per-user
-    # package linking into users.users.<user>.packages.
-    useUserPackages = false;
-    backupFileExtension = "hm-backup";
-    extraSpecialArgs = { inherit username; };
-    sharedModules = [ nixos-vscode-server.homeModules.default ];
-    users.${username} = import ../home/home.nix;
-  };
+  environment.systemPackages = with pkgs; [
+    btop
+    gh
+    just
+    vim
+  ];
 
   system.stateVersion = "25.11";
 }

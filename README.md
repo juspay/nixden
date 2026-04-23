@@ -22,15 +22,13 @@ just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
-First `just start` takes a few minutes: it boots the stock `github:nixos-lima` image, then `nixos-rebuild switch` applies our [`flake.nix`](flake.nix) on top (system + home-manager in one shot).
+First `just start` takes a few minutes: it boots the stock `github:nixos-lima` image, then `nixos-rebuild switch` applies our [`flake.nix`](flake.nix) on top.
 
 The VM user and hostname default to your macOS `$USER` / `devbox`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
 ## What's in the VM
 
-System (via [`nixos/configuration.nix`](nixos/configuration.nix)): `nix-ld`, flakes, passwordless `wheel` sudo, `systemd-logind` lingering for the user, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server).
-
-User (via [`home/home.nix`](home/home.nix)): `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
+Via [`nixos/configuration.nix`](nixos/configuration.nix): `nix-ld`, flakes, passwordless `wheel` sudo, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server), `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
 
 ## SSH access
 
