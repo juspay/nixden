@@ -28,11 +28,11 @@ The VM user and hostname default to your macOS `$USER` / `devbox`. CPU / memory 
 
 ## What's in the VM
 
-Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, passwordless `wheel` sudo, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server), `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
+Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, [`nixos-vscode-server`](https://github.com/nix-community/nixos-vscode-server), `starship`, `direnv` + `nix-direnv`, `btop`, `just`, `gh`.
 
 ## Security model
 
-This is a local, single-user devbox VM, not a hardened multi-user host. Lima creates a guest user matching your macOS `$USER`; today that user has passwordless `sudo` so `just provision` can run `nixos-rebuild switch`.
+This is a local, single-user devbox VM, not a hardened multi-user host. The passwordless sudo behavior comes from `nixos-lima`: `lima-init` creates a guest user matching your macOS `$USER` and adds it to `wheel`, while the `nixos-lima` module sets `security.sudo.wheelNeedsPassword = false`. This repo currently keeps that behavior so `just provision` can run `nixos-rebuild switch`.
 
 SSH access uses Lima's generated config under `~/.lima/devbox/ssh.config`, so this repo does not mutate your global `~/.ssh/config`. Your macOS home is mounted into the guest at `/Users/<you>` read-only; keep day-to-day development work in the guest's own writable filesystem, such as `~/code`.
 
