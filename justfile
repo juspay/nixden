@@ -88,7 +88,11 @@ start vm=name:
     if [ -d "$HOME/.lima/{{vm}}" ]; then
       limactl start "{{vm}}"
     else
-      limactl start --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --mount-only "$repo" --mount-only "{{exchange_dir}}:w" --yes "$template_path"
+      mount_args=(--mount-only "$repo" --mount-only "{{exchange_dir}}:w")
+      for mount_spec in ${DEVBOX_EXTRA_MOUNTS:-}; do
+        mount_args+=(--mount-only "$mount_spec")
+      done
+      limactl start --name="{{vm}}" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$template_path"
     fi
 
 # Stop the VM

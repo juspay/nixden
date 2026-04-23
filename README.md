@@ -76,6 +76,25 @@ just ssh 'cd ~/code && git clone ...'
 just ssh nix profile install nixpkgs#ripgrep
 ```
 
+## Opt-In Home Mount
+
+The default VM does not mount your full macOS home. This avoids exposing host
+secrets such as `~/.aws`, `~/.ssh`, and application dotfiles to the guest.
+
+If you deliberately want broader sharing, pass extra Lima mounts when creating
+or recreating the VM:
+
+```sh
+DEVBOX_EXTRA_MOUNTS="$HOME" just recreate    # read-only host home
+DEVBOX_EXTRA_MOUNTS="$HOME:w" just recreate  # writable host home
+```
+
+Prefer mounting a narrower directory when possible:
+
+```sh
+DEVBOX_EXTRA_MOUNTS="$HOME/.config/home-manager:w" just recreate
+```
+
 ## Refreshing Changes
 
 After editing [`nixos/configuration.nix`](nixos/configuration.nix) or [`nixos/devbox.nix`](nixos/devbox.nix):
