@@ -79,7 +79,7 @@ build-image vm=name:
     fi
     limactl create --arch="$lima_arch" --name="{{vm}}-builder" --cpus={{cpus}} --memory={{memory}} --disk={{disk}} "${mount_args[@]}" --yes "$builder_template"
     limactl start "${start_args[@]}" "{{vm}}-builder"
-    just provision-system "$linux_system" "{{vm}}-builder"
+    just --set cpus {{cpus}} --set memory {{memory}} --set disk {{disk}} provision-system "$linux_system" "{{vm}}-builder"
     image_store_path="$(
       limactl shell --workdir "$repo" "{{vm}}-builder" -- \
         bash -lc "nix build --no-link --print-out-paths '$repo'#packages.$linux_system.devbox-image"
@@ -115,7 +115,7 @@ start vm=name:
     fi
     mkdir -p "{{exchange_dir}}" "$artifacts_dir"
     if [ ! -f "$template_path" ]; then
-      just build-image "{{vm}}"
+      just --set cpus {{cpus}} --set memory {{memory}} --set disk {{disk}} build-image "{{vm}}"
     fi
     if [ -d "$HOME/.lima/{{vm}}" ]; then
       limactl start "${start_args[@]}" "{{vm}}"
