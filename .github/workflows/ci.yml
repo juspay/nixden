@@ -16,6 +16,7 @@ jobs:
       DEVBOX_ARTIFACTS_DIR: /tmp/devbox-artifacts-${{ github.run_id }}
       DEVBOX_EXCHANGE_DIR: /tmp/devbox-exchange-${{ github.run_id }}
       DEVBOX_VM: devbox-ci-x86
+      QEMU_SYSTEM_X86_64: qemu-system-x86_64 -accel tcg
     steps:
       - uses: actions/checkout@v4
 
