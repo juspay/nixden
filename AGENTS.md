@@ -1,6 +1,4 @@
-# Notes for Codex
-
-## Keep docs in sync
+# Keep docs in sync
 
 When changing `justfile`, `flake.nix`, `nixos/`, or `home/`, update [README.md](README.md) in the same change if it affects:
 
