@@ -10,6 +10,8 @@
   };
   programs.starship.enable = true;
 
+  # VS Code Remote-SSH downloads Linux binaries with non-NixOS paths; this
+  # user service patches them so the server runs correctly inside NixOS.
   services.vscode-server.enable = true;
 
   environment.systemPackages = with pkgs; [
