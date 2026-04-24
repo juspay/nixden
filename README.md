@@ -32,7 +32,7 @@ Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, [`nixos-vscode-ser
 
 ## Release images
 
-The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which builds the images, stages them as Actions artifacts, then uploads `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, matching SHA-512 files, and `devbox-lima.yaml` to that release.
+The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which uploads `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, matching SHA-512 files, and `devbox-lima.yaml` to that release.
 
 `just start` uses `https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml`; `just start dev` uses `https://github.com/juspay/devbox/releases/download/dev/devbox-lima.yaml`.
 

@@ -61,20 +61,36 @@ jobs:
           nix develop .#ci -c qemu-img convert -O qcow2 -c "$src" "$dst"
           nix develop .#ci -c sha512sum "$dst" > "$dst.sha512"
 
-      - name: Upload image artifact
+      - name: Upload image metadata artifact
         uses: actions/upload-artifact@v7
         with:
-          path: devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2
-          compression-level: 0
-          if-no-files-found: error
-          archive: false
-
-      - name: Upload checksum artifact
-        uses: actions/upload-artifact@v7
-        with:
+          name: release-metadata-${{ matrix.guest-arch }}
           path: devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2.sha512
           if-no-files-found: error
-          archive: false
+
+      - name: Upload image to release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          upload_asset() {
+            local asset=$1
+            local attempt
+            for attempt in 1 2 3; do
+              if nix develop .#ci -c gh release upload "$RELEASE_TAG" "$asset" --clobber; then
+                return 0
+              fi
+              sleep "$((attempt * 10))"
+              echo "Upload attempt $attempt failed for $asset"
+            done
+            return 1
+          }
+
+          nix develop .#ci -c gh release view "$RELEASE_TAG"
+          upload_asset "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
+          upload_asset "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512"
 
   publish-lima-template:
     name: Publish Lima template
@@ -87,29 +103,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Download aarch64 image
+      - name: Download image metadata artifacts
         uses: actions/download-artifact@v8
         with:
-          name: devbox-${{ env.RELEASE_TAG }}-aarch64.qcow2
-          path: .
-
-      - name: Download aarch64 checksum
-        uses: actions/download-artifact@v8
-        with:
-          name: devbox-${{ env.RELEASE_TAG }}-aarch64.qcow2.sha512
-          path: .
-
-      - name: Download x86_64 image
-        uses: actions/download-artifact@v8
-        with:
-          name: devbox-${{ env.RELEASE_TAG }}-x86_64.qcow2
-          path: .
-
-      - name: Download x86_64 checksum
-        uses: actions/download-artifact@v8
-        with:
-          name: devbox-${{ env.RELEASE_TAG }}-x86_64.qcow2.sha512
-          path: .
+          pattern: release-metadata-*
+          merge-multiple: true
 
       - name: Generate Lima template
         run: |
@@ -152,7 +150,7 @@ jobs:
           sha512sum devbox-lima.yaml > devbox-lima.yaml.sha512
           EOF
 
-      - name: Upload assets to release
+      - name: Upload Lima template to release
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -160,10 +158,6 @@ jobs:
           set -euo pipefail
           nix develop .#ci -c gh release view "$RELEASE_TAG"
           nix develop .#ci -c gh release upload "$RELEASE_TAG" \
-            "devbox-${RELEASE_TAG}-aarch64.qcow2" \
-            "devbox-${RELEASE_TAG}-aarch64.qcow2.sha512" \
-            "devbox-${RELEASE_TAG}-x86_64.qcow2" \
-            "devbox-${RELEASE_TAG}-x86_64.qcow2.sha512" \
             devbox-lima.yaml \
             devbox-lima.yaml.sha512 \
             --clobber
