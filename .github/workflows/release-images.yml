@@ -73,11 +73,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          assets=(
+            "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
+            "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512"
+          )
+
+          verify_uploaded_assets() {
+            local assets_json
+            assets_json="$(nix develop .#ci -c gh release view "$RELEASE_TAG" --json assets)"
+            for asset in "${assets[@]}"; do
+              echo "$assets_json" |
+                nix develop .#ci -c jq -e --arg name "$asset" \
+                  ".assets[] | select(.name == \$name and .state == \"uploaded\" and .size > 0)" \
+                  >/dev/null
+            done
+          }
+
           nix develop .#ci -c gh release view "$RELEASE_TAG"
-          nix develop .#ci -c gh release upload "$RELEASE_TAG" \
-            "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2" \
-            "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512" \
-            --clobber
+          if ! nix develop .#ci -c gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber; then
+            echo "gh release upload failed; checking whether the assets were uploaded anyway"
+            verify_uploaded_assets
+          fi
 
   publish-lima-template:
     name: Publish Lima template
