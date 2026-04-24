@@ -10,6 +10,13 @@ cpus="${DEVBOX_CPUS:-}"
 memory="${DEVBOX_MEMORY:-}"
 disk="${DEVBOX_DISK:-}"
 auto_size=1
+cpus_explicit=0
+memory_explicit=0
+disk_explicit=0
+
+[ -n "${DEVBOX_CPUS:-}" ] && cpus_explicit=1
+[ -n "${DEVBOX_MEMORY:-}" ] && memory_explicit=1
+[ -n "${DEVBOX_DISK:-}" ] && disk_explicit=1
 
 if [ "${DEVBOX_LIMA_DEFAULTS:-}" = "1" ]; then
   auto_size=0
@@ -63,7 +70,7 @@ ok() {
 }
 
 warn() {
-  printf '  %s!%s %s\n' "$yellow" "$reset" "$*" >&2
+  printf '  %s!%s %s\n' "$yellow" "$reset" "$*"
 }
 
 die() {
@@ -130,25 +137,31 @@ while [ $# -gt 0 ]; do
       need_value "$@"
       shift
       cpus="$1"
+      cpus_explicit=1
       ;;
     --cpus=*)
       cpus="${1#--cpus=}"
+      cpus_explicit=1
       ;;
     --memory)
       need_value "$@"
       shift
       memory="$1"
+      memory_explicit=1
       ;;
     --memory=*)
       memory="${1#--memory=}"
+      memory_explicit=1
       ;;
     --disk)
       need_value "$@"
       shift
       disk="$1"
+      disk_explicit=1
       ;;
     --disk=*)
       disk="${1#--disk=}"
+      disk_explicit=1
       ;;
     --lima-defaults)
       auto_size=0
@@ -218,12 +231,59 @@ detect_disk() {
   floor_at "$gib" 32
 }
 
+gib_to_bytes() {
+  value="$1"
+  case "$value" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  printf '%s\n' "$((value * 1073741824))"
+}
+
 instance_exists() {
   limactl list -q 2>/dev/null | grep -Fxq "$name"
 }
 
 instance_status() {
   limactl list --format '{{.Status}}' "$name" 2>/dev/null || printf 'Unknown'
+}
+
+resource_mismatches() {
+  actual="$(limactl list --format '{{.CPUs}} {{.Memory}} {{.Disk}}' "$name" 2>/dev/null || true)"
+  [ -n "$actual" ] || return 0
+
+  set -- $actual
+  actual_cpus="${1:-}"
+  actual_memory="${2:-}"
+  actual_disk="${3:-}"
+
+  mismatch=0
+  if [ -n "$cpus" ] && [ -n "$actual_cpus" ] && [ "$actual_cpus" != "$cpus" ]; then
+    warn "Existing VM CPUs: $actual_cpus; requested: $cpus"
+    mismatch=1
+  fi
+
+  desired_memory="$(gib_to_bytes "$memory" 2>/dev/null || true)"
+  if [ -n "$desired_memory" ] && [ -n "$actual_memory" ] && [ "$actual_memory" != "$desired_memory" ]; then
+    warn "Existing VM memory: $((actual_memory / 1073741824)) GiB; requested: ${memory} GiB"
+    mismatch=1
+  fi
+
+  desired_disk="$(gib_to_bytes "$disk" 2>/dev/null || true)"
+  if [ "$disk_explicit" = "1" ] && [ -n "$desired_disk" ] && [ -n "$actual_disk" ] && [ "$actual_disk" != "$desired_disk" ]; then
+    warn "Existing VM disk: $((actual_disk / 1073741824)) GiB; requested: ${disk} GiB"
+    mismatch=1
+  fi
+
+  if [ "$mismatch" = "1" ]; then
+    warn "Existing Lima VMs keep their original resources."
+    warn "To recreate with requested resources:"
+    warn "  limactl delete $name"
+    warn "  curl -fsSL https://juspay.github.io/devbox/start | sh -"
+  fi
+}
+
+box_line() {
+  printf '%s\n' "  | $*"
 }
 
 say "${bold}devbox${reset}"
@@ -286,6 +346,7 @@ phase "Starting devbox"
 if instance_exists; then
   status="$(instance_status)"
   ok "Found existing Lima instance \"$name\" ($status)"
+  resource_mismatches
   if [ "$status" = "Running" ]; then
     ok "VM already running"
   else
@@ -309,12 +370,15 @@ fi
 phase "Ready"
 ok "devbox is ready"
 say
-say "Open a shell:"
-say "  limactl shell --workdir=. $name"
-say
-say "Transfer files intentionally through:"
-say "  $transfer_dir"
-say
-say "Stop or delete the VM:"
-say "  limactl stop $name"
-say "  limactl delete $name"
+say "${bold}Next steps${reset}"
+say "  +------------------------------------------------------------"
+box_line "Open a shell:"
+box_line "  limactl shell --workdir=. $name"
+box_line ""
+box_line "Transfer files intentionally through:"
+box_line "  $transfer_dir"
+box_line ""
+box_line "Stop or delete the VM:"
+box_line "  limactl stop $name"
+box_line "  limactl delete $name"
+say "  +------------------------------------------------------------"
