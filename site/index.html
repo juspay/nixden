@@ -445,6 +445,19 @@
       .step-desc ol li { padding-left: 2px; }
       .step-desc strong { color: var(--ink); }
 
+      .editor-chip {
+        color: #0065a9;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .vscode-icon {
+        display: inline-block;
+        height: 0.95em;
+        margin-right: 5px;
+        vertical-align: -0.15em;
+        width: 0.95em;
+      }
+
       /* faq */
       details {
         border-top: 1px solid rgba(20, 18, 16, 0.22);
@@ -653,16 +666,17 @@
           </article>
           <article class="step">
             <div class="step-n">II.</div>
-            <h3 class="step-title">Clone your work</h3>
+            <h3 class="step-title">Clone, then activate</h3>
             <div class="step-desc">
-              <p><code>mkdir -p ~/code &amp;&amp; cd ~/code &amp;&amp; git clone …</code></p>
-              <p>Live inside the guest; reach for <code>/tmp/lima-nixden</code> only when you need to cross the boundary.</p>
+              <p><code>git clone … &amp;&amp; cd repo &amp;&amp; direnv allow</code></p>
+              <p>The VM is a clean slate — nothing from macOS is shared, so clone inside the guest. <code>direnv allow</code> drops you into the flake's dev shell; <code>nix develop</code> works too.</p>
             </div>
           </article>
           <article class="step">
             <div class="step-n">III.</div>
-            <h3 class="step-title">Attach VS Code</h3>
+            <h3 class="step-title">Attach your editor</h3>
             <div class="step-desc">
+              <p>Any SSH-aware editor connects via <code>~/.lima/nixden/ssh.config</code>. <span class="editor-chip"><svg class="vscode-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z"/></svg>VS Code Remote-SSH</span> shown below.</p>
               <ol>
                 <li><strong>⌘⇧P → Remote-SSH: Settings.</strong> Set <strong>Config File</strong> to <code>~/.lima/nixden/ssh.config</code>.</li>
                 <li><strong>⌘⇧P → Remote-SSH: Connect to Host…</strong> Pick <code>lima-nixden</code>.</li>
@@ -680,16 +694,16 @@
         </div>
         <div class="faq-list">
           <details>
-            <summary>File transfer boundary</summary>
+            <summary>Why a VM, not just Nix on macOS?</summary>
+            <p>nixden quarantines your dev toolchain. On macOS, every <code>nix run</code>, <code>npm install</code>, or <code>direnv allow</code> has your <code>$HOME</code>, SSH keys, and keychain in reach. Inside the VM a compromised dependency stays in the guest — and when things get weird you throw the VM away.</p>
+          </details>
+          <details>
+            <summary>Moving files between Mac and VM</summary>
             <p>Use <code>/tmp/lima-nixden</code> intentionally from either side. Clone repos inside the VM — the macOS home directory is not mounted.</p>
           </details>
           <details>
             <summary>Customise CPU, memory, disk, or release tag</summary>
             <p>By default the starter grabs the latest release, auto-sizes CPU, memory, and disk from the host, reuses a running VM, and starts a stopped one. For overrides, pipe <code>--help</code>: <code>curl -fsSL https://juspay.github.io/nixden/start | sh -s -- --help</code>.</p>
-          </details>
-          <details>
-            <summary>Why <code>--workdir=.</code>?</summary>
-            <p>nixden does not mount the macOS home directory, so the shell must start in a guest path. Passing a host-side path will fail silently.</p>
           </details>
         </div>
       </section>
