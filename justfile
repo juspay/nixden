@@ -22,15 +22,20 @@ default:
 
 # --- Lifecycle ---
 
-# We build the Lima template from our locked `nixos-lima` flake input
-# via `.#lima-template`, so `limactl start` sees exactly the pinned
-# version (qcow2 digest included) instead of refetching master.
+# We render the Lima template from our locked `nixos-lima` flake input,
+# replacing its stock image list with the latest `juspay/devbox` release
+# images and their SHA-512 digests.
 
-# Create and start the NixOS VM, then apply our custom config
+# Create and start the NixOS VM from the latest release image
 [group('lifecycle')]
 start vm=name:
-    {{nix_shell}} limactl start --name={{vm}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes $(nix build --no-link --print-out-paths .#lima-template)
-    just provision {{vm}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    template="$(mktemp -t devbox-lima.XXXXXX.yaml)"
+    trap 'rm -f "$template"' EXIT
+    base_template="$({{nix_shell}} nix build --no-link --print-out-paths .#lima-template)"
+    {{nix_shell}} scripts/render-lima-template.sh "$base_template" > "$template"
+    {{nix_shell}} limactl start --name={{vm}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "$template"
 
 # `--workdir /tmp` keeps CWD off Lima's Users-<user> 9p mount so that
 # switch-to-configuration can restart that mount unit cleanly.

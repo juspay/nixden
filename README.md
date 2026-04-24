@@ -7,13 +7,13 @@ NixOS based devbox on macOS — a [`justfile`](justfile) + flake that boots and 
 - [Nix](https://nixos.asia/en/install) (everything else comes from the devShell)
 - [`just`](https://github.com/casey/just)
 
-Run `nix develop` once to enter a shell with `lima`, `just`, and `gh` pinned, or let each recipe invoke `nix develop -c` automatically.
+Run `nix develop` once to enter a shell with `lima`, `just`, `curl`, `jq`, and `gh` pinned, or let each recipe invoke `nix develop -c` automatically.
 
 ## Usage
 
 ```sh
 just              # list recipes
-just start        # create + boot the VM, then apply our flake (nixos-rebuild)
+just start        # create + boot the VM from the latest release image
 just provision    # re-apply the flake (after editing config)
 just shell        # open a shell in the VM
 just stop         # stop the VM
@@ -22,9 +22,9 @@ just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
-First `just start` takes a few minutes: it boots the stock `github:nixos-lima` image, then `nixos-rebuild switch` applies our [`flake.nix`](flake.nix) on top.
+First `just start` downloads and boots the latest `juspay/devbox` GitHub release image for your Mac's architecture. The generated Lima template keeps the locked `nixos-lima` defaults for mounts, memory, and port forwarding, but replaces the stock image URLs with the latest devbox release assets and their SHA-512 digests.
 
-The VM user and hostname default to your macOS `$USER` / `devbox`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
+The VM name defaults to `devbox`, and the guest user defaults to your macOS `$USER`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
 ## What's in the VM
 
@@ -34,7 +34,7 @@ Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, [`nixos-vscode-ser
 
 The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which uses the `ci` dev shell to upload `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, and matching SHA-512 files to that release.
 
-These assets are groundwork for launching directly from a devbox image. For now, `just start` still boots the stock `nixos-lima` image and runs `nixos-rebuild switch`.
+`just start` uses the latest published image. Use `just provision` only when you want to apply local checkout changes to an existing VM with `nixos-rebuild switch`.
 
 ## Cutting a release
 
