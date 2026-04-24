@@ -64,11 +64,17 @@ jobs:
       - name: Upload image artifact
         uses: actions/upload-artifact@v7
         with:
-          name: release-image-${{ matrix.guest-arch }}
-          path: |
-            devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2
-            devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2.sha512
+          path: devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2
           compression-level: 0
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload checksum artifact
+        uses: actions/upload-artifact@v7
+        with:
+          path: devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2.sha512
+          if-no-files-found: error
+          archive: false
 
   publish-lima-template:
     name: Publish Lima template
@@ -81,11 +87,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Download image artifacts
+      - name: Download aarch64 image
         uses: actions/download-artifact@v8
         with:
-          pattern: release-image-*
-          merge-multiple: true
+          name: devbox-${{ env.RELEASE_TAG }}-aarch64.qcow2
+          path: .
+
+      - name: Download aarch64 checksum
+        uses: actions/download-artifact@v8
+        with:
+          name: devbox-${{ env.RELEASE_TAG }}-aarch64.qcow2.sha512
+          path: .
+
+      - name: Download x86_64 image
+        uses: actions/download-artifact@v8
+        with:
+          name: devbox-${{ env.RELEASE_TAG }}-x86_64.qcow2
+          path: .
+
+      - name: Download x86_64 checksum
+        uses: actions/download-artifact@v8
+        with:
+          name: devbox-${{ env.RELEASE_TAG }}-x86_64.qcow2.sha512
+          path: .
 
       - name: Generate Lima template
         run: |
