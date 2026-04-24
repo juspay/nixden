@@ -18,6 +18,6 @@ squash merges, so the PR title becomes the commit title and release-note input.
 
 Examples:
 
-- `feat: boot devbox from release image`
+- `feat: boot nixden from release image`
 - `fix(lima): clear mutable dev image cache`
 - `docs: document release workflow`

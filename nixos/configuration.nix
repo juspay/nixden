@@ -3,7 +3,7 @@
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
-    ./devbox.nix
+    ./nixden.nix
   ];
 
   # Enable Lima guest integration (lima-init: user creation from cidata,

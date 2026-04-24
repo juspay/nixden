@@ -1,5 +1,5 @@
 nix_shell := if env('IN_NIX_SHELL', '') != '' { '' } else { 'nix develop -c' }
-name := "devbox"
+name := "nixden"
 
 # CPUs = host logical cores − 2 (leave a couple for the host). CPU
 # over-subscription is cheap — the host scheduler time-slices — so we
@@ -32,14 +32,14 @@ start release="latest":
     set -euo pipefail
     release="{{release}}"
     if [ "$release" = "latest" ]; then
-      template_url="https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml"
+      template_url="https://github.com/juspay/nixden/releases/latest/download/nixden-lima.yaml"
     else
-      template_url="https://github.com/juspay/devbox/releases/download/$release/devbox-lima.yaml"
+      template_url="https://github.com/juspay/nixden/releases/download/$release/nixden-lima.yaml"
     fi
-    mkdir -p /tmp/lima-devbox
+    mkdir -p /tmp/lima-nixden
     {{nix_shell}} limactl start --name={{name}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "$template_url"
 
-# Delete Lima's downloaded devbox image cache for a release
+# Delete Lima's downloaded nixden image cache for a release
 [group('lifecycle')]
 delete-downloaded-images release="dev":
     #!/usr/bin/env bash
@@ -53,7 +53,7 @@ delete-downloaded-images release="dev":
 
     [ -d "$cache_root" ] || exit 0
     for arch in aarch64 x86_64; do
-      url="https://github.com/juspay/devbox/releases/download/$release/devbox-$release-$arch.qcow2"
+      url="https://github.com/juspay/nixden/releases/download/$release/nixden-$release-$arch.qcow2"
       while IFS= read -r entry; do
         if [ -f "$entry/url" ] && grep -Fxq "$url" "$entry/url"; then
           rm -rf "$entry"
@@ -115,8 +115,8 @@ release version:
     notes_file="$(mktemp)"
     trap 'rm -f "$notes_file"' EXIT
     {{nix_shell}} git cliff --unreleased --tag "{{version}}" --strip header > "$notes_file"
-    {{nix_shell}} gh release create "{{version}}" --repo juspay/devbox --target main --title "Release {{version}}" --notes-file "$notes_file"
-    {{nix_shell}} gh workflow run release-images.yml --repo juspay/devbox --ref main -f tag="{{version}}"
+    {{nix_shell}} gh release create "{{version}}" --repo juspay/nixden --target main --title "Release {{version}}" --notes-file "$notes_file"
+    {{nix_shell}} gh workflow run release-images.yml --repo juspay/nixden --ref main -f tag="{{version}}"
 
 # Recreate the mutable dev prerelease from the current branch
 [group('release')]
@@ -128,11 +128,11 @@ release-development tag="dev":
       echo "release-development must be run from a branch, not detached HEAD" >&2
       exit 1
     fi
-    {{nix_shell}} gh release delete "{{tag}}" --repo juspay/devbox --yes --cleanup-tag || true
+    {{nix_shell}} gh release delete "{{tag}}" --repo juspay/nixden --yes --cleanup-tag || true
     {{nix_shell}} gh release create "{{tag}}" \
-      --repo juspay/devbox \
+      --repo juspay/nixden \
       --target "$branch" \
       --title "Development" \
       --notes "Mutable development image release from $branch" \
       --prerelease
-    {{nix_shell}} gh workflow run release-images.yml --repo juspay/devbox --ref "$branch" -f tag="{{tag}}"
+    {{nix_shell}} gh workflow run release-images.yml --repo juspay/nixden --ref "$branch" -f tag="{{tag}}"

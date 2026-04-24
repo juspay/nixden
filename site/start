@@ -1,30 +1,30 @@
 #!/bin/sh
 set -eu
 
-repo="juspay/devbox"
-name="${DEVBOX_NAME:-devbox}"
-tag="${DEVBOX_TAG:-latest}"
-template_url="${DEVBOX_TEMPLATE_URL:-}"
-transfer_dir="${DEVBOX_TRANSFER_DIR:-/tmp/lima-devbox}"
-cpus="${DEVBOX_CPUS:-}"
-memory="${DEVBOX_MEMORY:-}"
-disk="${DEVBOX_DISK:-}"
+repo="juspay/nixden"
+name="${NIXDEN_NAME:-nixden}"
+tag="${NIXDEN_TAG:-latest}"
+template_url="${NIXDEN_TEMPLATE_URL:-}"
+transfer_dir="${NIXDEN_TRANSFER_DIR:-/tmp/lima-nixden}"
+cpus="${NIXDEN_CPUS:-}"
+memory="${NIXDEN_MEMORY:-}"
+disk="${NIXDEN_DISK:-}"
 auto_size=1
 cpus_explicit=0
 memory_explicit=0
 disk_explicit=0
 
-[ -n "${DEVBOX_CPUS:-}" ] && cpus_explicit=1
-[ -n "${DEVBOX_MEMORY:-}" ] && memory_explicit=1
-[ -n "${DEVBOX_DISK:-}" ] && disk_explicit=1
+[ -n "${NIXDEN_CPUS:-}" ] && cpus_explicit=1
+[ -n "${NIXDEN_MEMORY:-}" ] && memory_explicit=1
+[ -n "${NIXDEN_DISK:-}" ] && disk_explicit=1
 
-if [ "${DEVBOX_LIMA_DEFAULTS:-}" = "1" ]; then
+if [ "${NIXDEN_LIMA_DEFAULTS:-}" = "1" ]; then
   auto_size=0
 fi
 
-if [ "${DEVBOX_COLOR:-}" = "1" ]; then
+if [ "${NIXDEN_COLOR:-}" = "1" ]; then
   use_color=1
-elif [ "${DEVBOX_COLOR:-}" = "0" ] || [ "${NO_COLOR:-}" ]; then
+elif [ "${NIXDEN_COLOR:-}" = "0" ] || [ "${NO_COLOR:-}" ]; then
   use_color=0
 elif [ -t 1 ]; then
   use_color=1
@@ -80,15 +80,15 @@ die() {
 
 usage() {
   cat <<'EOF'
-devbox starter
+nixden starter
 
 Usage:
-  curl -fsSL https://juspay.github.io/devbox/start | sh -
-  curl -fsSL https://juspay.github.io/devbox/start | sh -s -- [options]
+  curl -fsSL https://juspay.github.io/nixden/start | sh -
+  curl -fsSL https://juspay.github.io/nixden/start | sh -s -- [options]
 
 Options:
-  --name NAME          Lima instance name (default: devbox)
-  --tag TAG            devbox release tag, or latest (default: latest)
+  --name NAME          Lima instance name (default: nixden)
+  --tag TAG            nixden release tag, or latest (default: latest)
   --template-url URL   Full Lima template URL to use instead of --tag
   --cpus N             Override CPU count
   --memory GIB         Override memory in GiB
@@ -97,9 +97,9 @@ Options:
   -h, --help           Show this help
 
 Environment overrides:
-  DEVBOX_NAME, DEVBOX_TAG, DEVBOX_TEMPLATE_URL, DEVBOX_CPUS,
-  DEVBOX_MEMORY, DEVBOX_DISK, DEVBOX_TRANSFER_DIR,
-  DEVBOX_LIMA_DEFAULTS=1, DEVBOX_COLOR=0|1, NO_COLOR=1
+  NIXDEN_NAME, NIXDEN_TAG, NIXDEN_TEMPLATE_URL, NIXDEN_CPUS,
+  NIXDEN_MEMORY, NIXDEN_DISK, NIXDEN_TRANSFER_DIR,
+  NIXDEN_LIMA_DEFAULTS=1, NIXDEN_COLOR=0|1, NO_COLOR=1
 EOF
 }
 
@@ -278,7 +278,7 @@ resource_mismatches() {
     warn "Existing Lima VMs keep their original resources."
     warn "To recreate with requested resources:"
     warn "  limactl delete $name"
-    warn "  curl -fsSL https://juspay.github.io/devbox/start | sh -"
+    warn "  curl -fsSL https://juspay.github.io/nixden/start | sh -"
   fi
 }
 
@@ -286,7 +286,7 @@ box_line() {
   printf '%s\n' "  | $*"
 }
 
-say "${bold}devbox${reset}"
+say "${bold}nixden${reset}"
 
 phase "Checking requirements"
 if ! command -v limactl >/dev/null 2>&1; then
@@ -318,9 +318,9 @@ info "$lima_path"
 
 if [ -z "$template_url" ]; then
   if [ "$tag" = "latest" ]; then
-    template_url="https://github.com/$repo/releases/latest/download/devbox-lima.yaml"
+    template_url="https://github.com/$repo/releases/latest/download/nixden-lima.yaml"
   else
-    template_url="https://github.com/$repo/releases/download/$tag/devbox-lima.yaml"
+    template_url="https://github.com/$repo/releases/download/$tag/nixden-lima.yaml"
   fi
 fi
 ok "Release template selected"
@@ -342,7 +342,7 @@ phase "Preparing host"
 mkdir -p "$transfer_dir"
 ok "Transfer directory ready: $transfer_dir"
 
-phase "Starting devbox"
+phase "Starting nixden"
 if instance_exists; then
   status="$(instance_status)"
   ok "Found existing Lima instance \"$name\" ($status)"
@@ -368,7 +368,7 @@ else
 fi
 
 phase "Ready"
-ok "devbox is ready"
+ok "nixden is ready"
 say
 say "${bold}Next steps${reset}"
 say "  +------------------------------------------------------------"

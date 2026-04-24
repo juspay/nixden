@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>devbox — prebuilt NixOS on Lima</title>
+    <title>nixden — prebuilt NixOS on Lima</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
@@ -572,14 +572,14 @@
   </head>
   <body>
     <header class="masthead">
-      <div class="mast-mark">devbox</div>
+      <div class="mast-mark">nixden</div>
       <div class="mast-meta">
         <span><strong>Vol. 01</strong> · Prebuilt NixOS</span>
         <span><strong>Runtime</strong> · Lima</span>
         <span><strong>Edition</strong> · 2026</span>
       </div>
       <nav class="mast-links">
-        <a href="https://github.com/juspay/devbox">GitHub</a>
+        <a href="https://github.com/juspay/nixden">GitHub</a>
         <a href="https://lima-vm.io/docs/installation/">Install Lima</a>
         <a href="./start">start</a>
       </nav>
@@ -592,14 +592,14 @@
         <h1 class="display reveal reveal-2">A NixOS VM,<br><em>ready to run.</em></h1>
         <div class="lead-row">
           <p class="lead reveal reveal-3">
-            <strong>devbox</strong> boots a prebuilt Lima image for local
+            <strong>nixden</strong> boots a prebuilt Lima image for local
             development. Your macOS home directory stays outside the VM —
             mount only what you need.
           </p>
           <ul class="facts reveal reveal-4">
             <li><span class="k">Image</span><span class="v">Prebuilt NixOS release</span></li>
             <li><span class="k">Stack</span><span class="v">flakes · direnv · gh · just</span></li>
-            <li><span class="k">Mount</span><span class="v"><code>/tmp/lima-devbox</code></span></li>
+            <li><span class="k">Mount</span><span class="v"><code>/tmp/lima-nixden</code></span></li>
           </ul>
         </div>
       </section>
@@ -618,10 +618,10 @@
           <div class="terminal">
             <div class="terminal-top">
               <div class="terminal-dots"><span></span><span></span><span></span></div>
-              <div>~ / devbox / start</div>
+              <div>~ / nixden / start</div>
             </div>
             <div class="terminal-body">
-              <pre><span class="prompt">$</span><code id="start-command">curl -fsSL https://juspay.github.io/devbox/start | sh -</code><span class="cursor" aria-hidden="true"></span></pre>
+              <pre><span class="prompt">$</span><code id="start-command">curl -fsSL https://juspay.github.io/nixden/start | sh -</code><span class="cursor" aria-hidden="true"></span></pre>
               <button type="button" class="copy" data-copy="#start-command" aria-label="Copy start command" title="Copy start command">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
@@ -647,8 +647,8 @@
             <div class="step-n">I.</div>
             <h3 class="step-title">Open a shell</h3>
             <div class="step-desc">
-              <p><code>limactl shell --workdir=. devbox</code></p>
-              <p>devbox does not mount <code>$HOME</code>, so always hand Lima a guest path.</p>
+              <p><code>limactl shell --workdir=. nixden</code></p>
+              <p>nixden does not mount <code>$HOME</code>, so always hand Lima a guest path.</p>
             </div>
           </article>
           <article class="step">
@@ -656,7 +656,7 @@
             <h3 class="step-title">Clone your work</h3>
             <div class="step-desc">
               <p><code>mkdir -p ~/code &amp;&amp; cd ~/code &amp;&amp; git clone …</code></p>
-              <p>Live inside the guest; reach for <code>/tmp/lima-devbox</code> only when you need to cross the boundary.</p>
+              <p>Live inside the guest; reach for <code>/tmp/lima-nixden</code> only when you need to cross the boundary.</p>
             </div>
           </article>
           <article class="step">
@@ -664,8 +664,8 @@
             <h3 class="step-title">Attach VS Code</h3>
             <div class="step-desc">
               <ol>
-                <li><strong>⌘⇧P → Remote-SSH: Settings.</strong> Set <strong>Config File</strong> to <code>~/.lima/devbox/ssh.config</code>.</li>
-                <li><strong>⌘⇧P → Remote-SSH: Connect to Host…</strong> Pick <code>lima-devbox</code>.</li>
+                <li><strong>⌘⇧P → Remote-SSH: Settings.</strong> Set <strong>Config File</strong> to <code>~/.lima/nixden/ssh.config</code>.</li>
+                <li><strong>⌘⇧P → Remote-SSH: Connect to Host…</strong> Pick <code>lima-nixden</code>.</li>
               </ol>
             </div>
           </article>
@@ -681,22 +681,22 @@
         <div class="faq-list">
           <details>
             <summary>File transfer boundary</summary>
-            <p>Use <code>/tmp/lima-devbox</code> intentionally from either side. Clone repos inside the VM — the macOS home directory is not mounted.</p>
+            <p>Use <code>/tmp/lima-nixden</code> intentionally from either side. Clone repos inside the VM — the macOS home directory is not mounted.</p>
           </details>
           <details>
             <summary>Customise CPU, memory, disk, or release tag</summary>
-            <p>By default the starter grabs the latest release, auto-sizes CPU, memory, and disk from the host, reuses a running VM, and starts a stopped one. For overrides, pipe <code>--help</code>: <code>curl -fsSL https://juspay.github.io/devbox/start | sh -s -- --help</code>.</p>
+            <p>By default the starter grabs the latest release, auto-sizes CPU, memory, and disk from the host, reuses a running VM, and starts a stopped one. For overrides, pipe <code>--help</code>: <code>curl -fsSL https://juspay.github.io/nixden/start | sh -s -- --help</code>.</p>
           </details>
           <details>
             <summary>Why <code>--workdir=.</code>?</summary>
-            <p>devbox does not mount the macOS home directory, so the shell must start in a guest path. Passing a host-side path will fail silently.</p>
+            <p>nixden does not mount the macOS home directory, so the shell must start in a guest path. Passing a host-side path will fail silently.</p>
           </details>
         </div>
       </section>
 
       <footer>
-        <span>Juspay · devbox</span>
-        <a href="https://github.com/juspay/devbox#non-nix-users">Full setup notes →</a>
+        <span>Juspay · nixden</span>
+        <a href="https://github.com/juspay/nixden#non-nix-users">Full setup notes →</a>
       </footer>
     </main>
 

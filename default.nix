@@ -1,7 +1,7 @@
 { nixpkgs, nixos-lima, nixos-vscode-server, ... }:
 
 let
-  mkDevbox = system:
+  mkNixden = system:
     nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
@@ -11,13 +11,13 @@ let
       ];
     };
 
-  devboxAarch64 = mkDevbox "aarch64-linux";
-  devboxX86_64 = mkDevbox "x86_64-linux";
+  nixdenAarch64 = mkNixden "aarch64-linux";
+  nixdenX86_64 = mkNixden "x86_64-linux";
 in
 {
   nixosConfigurations = {
-    devbox = devboxAarch64;
-    devbox-aarch64 = devboxAarch64;
-    devbox-x86_64 = devboxX86_64;
+    nixden = nixdenAarch64;
+    nixden-aarch64 = nixdenAarch64;
+    nixden-x86_64 = nixdenX86_64;
   };
 }
