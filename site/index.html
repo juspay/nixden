@@ -423,26 +423,22 @@
               <p><code>mkdir -p ~/code && cd ~/code && git clone ...</code></p>
             </article>
             <article class="step">
-              <div class="step-title"><span class="step-number">3</span>VS Code</div>
-              <p>Config file: <code>~/.lima/devbox/ssh.config</code>; host: <code>lima-devbox</code>.</p>
+              <div class="step-title"><span class="step-number">3</span>VS Code Remote-SSH</div>
+              <ol class="remote-steps">
+                <li>
+                  <strong>Cmd-Shift-P</strong> -> <strong>Remote-SSH: Settings</strong>:
+                  set <strong>Config File</strong> to <code>~/.lima/devbox/ssh.config</code>.
+                </li>
+                <li>
+                  <strong>Cmd-Shift-P</strong> -> <strong>Remote-SSH: Connect to Host...</strong>:
+                  pick <code>lima-devbox</code>.
+                </li>
+              </ol>
             </article>
           </div>
         </section>
 
         <section class="faq" aria-label="Details">
-          <details>
-            <summary>Exact VS Code steps</summary>
-            <ol class="remote-steps">
-              <li>
-                <strong>Cmd-Shift-P</strong> -> <strong>Remote-SSH: Settings</strong>:
-                set <strong>Config File</strong> to <code>~/.lima/devbox/ssh.config</code>.
-              </li>
-              <li>
-                <strong>Cmd-Shift-P</strong> -> <strong>Remote-SSH: Connect to Host...</strong>:
-                pick <code>lima-devbox</code>.
-              </li>
-            </ol>
-          </details>
           <details>
             <summary>File transfer boundary</summary>
             <p>Use <code>/tmp/lima-devbox</code> intentionally from either side. Clone repos inside the VM.</p>
