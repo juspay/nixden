@@ -40,15 +40,26 @@
           };
         });
 
-      # Lima template YAML, pinned to our locked nixos-lima input. Passes
-      # through unmodified today; to apply local overrides (e.g. writable
-      # mounts), swap the `cp` for a `yq` transform, for example:
-      #   nativeBuildInputs = [ pkgs.yq-go ];
-      #   yq '.mounts |= map(.writable = true)' ${nixos-lima}/.lima.yaml > $out
+      # Lima template YAML, pinned to our locked nixos-lima input. Keep the
+      # nixos-lima guest integration defaults, but replace broad host mounts
+      # with a narrow scratch directory for explicit file transfer.
       packages = forEach systems (system:
         let pkgs = nixpkgs.legacyPackages.${system}; in {
-          lima-template = pkgs.runCommand "nixos-lima-template" { } ''
-            cp ${nixos-lima}/.lima.yaml $out
+          lima-template = pkgs.runCommand "devbox-lima-template" {
+            nativeBuildInputs = [ pkgs.yq-go ];
+          } ''
+            yq -P '
+              .mounts = [
+                {
+                  "location": "/tmp/lima-devbox",
+                  "mountPoint": "/tmp/lima-devbox",
+                  "writable": true,
+                  "9p": {
+                    "cache": "mmap"
+                  }
+                }
+              ]
+            ' ${nixos-lima}/.lima.yaml > $out
           '';
         });
     };

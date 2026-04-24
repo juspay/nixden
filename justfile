@@ -36,6 +36,7 @@ start release="latest":
     else
       template_url="https://github.com/juspay/devbox/releases/download/$release/devbox-lima.yaml"
     fi
+    mkdir -p /tmp/lima-devbox
     {{nix_shell}} limactl start --name={{name}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "$template_url"
 
 # Delete Lima's downloaded devbox image cache for a release

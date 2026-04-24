@@ -23,7 +23,7 @@ just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
-First `just start` downloads and boots the latest `juspay/devbox` GitHub release template. That template keeps the locked `nixos-lima` defaults for mounts, memory, and port forwarding, and points at the matching devbox qcow2 assets with SHA-512 digests.
+First `just start` downloads and boots the latest `juspay/devbox` GitHub release template. That template keeps the locked `nixos-lima` integration defaults, points at the matching devbox qcow2 assets with SHA-512 digests, and mounts only `/tmp/lima-devbox` from the host for intentional file transfer.
 
 The VM name is `devbox`, and the guest user defaults to your macOS `$USER`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
@@ -79,7 +79,7 @@ docs: document release workflow
 
 This is a local, single-user devbox VM, not a hardened multi-user host. The passwordless sudo behavior comes from `nixos-lima`: `lima-init` creates a guest user matching your macOS `$USER` and adds it to `wheel`, while the `nixos-lima` module sets `security.sudo.wheelNeedsPassword = false`. This repo currently keeps that behavior.
 
-SSH access uses Lima's generated config under `~/.lima/devbox/ssh.config`, so this repo does not mutate your global `~/.ssh/config`. Your macOS home is mounted into the guest at `/Users/<you>` read-only; keep day-to-day development work in the guest's own writable filesystem, such as `~/code`.
+SSH access uses Lima's generated config under `~/.lima/devbox/ssh.config`, so this repo does not mutate your global `~/.ssh/config`. The VM does not mount your macOS home directory. The only default host mount is `/tmp/lima-devbox`, mounted writable at the same path in the guest so you can intentionally transfer files across the boundary. Treat it as a scratch exchange directory, not a workspace or secrets store.
 
 ## Installing more tools
 
@@ -106,7 +106,7 @@ That's the whole setup. Subsequent connects are one command.
 
 ## Working on projects inside the VM
 
-Lima mounts your macOS home at `/Users/<you>` inside the guest **read-only**. For development, clone repos into the guest's own filesystem (writable, faster, no 9p overhead):
+For development, clone repos into the guest's own filesystem (writable, faster, no 9p overhead):
 
 ```sh
 just ssh
@@ -114,4 +114,4 @@ mkdir -p ~/code && cd ~/code
 git clone …
 ```
 
-The mount's read-only state is the Lima default; we keep it. If you want to override it (or anything else in the template), [`flake.nix`](flake.nix) has a `yq`-based pattern commented next to the `lima-template` derivation.
+To move files between macOS and the VM, use `/tmp/lima-devbox` on either side. It is the only default host path exposed to the guest.
