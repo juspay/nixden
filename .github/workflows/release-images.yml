@@ -78,22 +78,40 @@ jobs:
             "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512"
           )
 
-          verify_uploaded_assets() {
+          asset_uploaded() {
+            local asset=$1
             local assets_json
             assets_json="$(nix develop .#ci -c gh release view "$RELEASE_TAG" --json assets)"
-            for asset in "${assets[@]}"; do
-              echo "$assets_json" |
-                nix develop .#ci -c jq -e --arg name "$asset" \
-                  ".assets[] | select(.name == \$name and .state == \"uploaded\" and .size > 0)" \
-                  >/dev/null
+            echo "$assets_json" |
+              nix develop .#ci -c jq -e --arg name "$asset" \
+                ".assets[] | select(.name == \$name and .state == \"uploaded\" and .size > 0)" \
+                >/dev/null
+          }
+
+          upload_asset() {
+            local asset=$1
+            local attempt
+            for attempt in 1 2 3; do
+              if nix develop .#ci -c gh release upload "$RELEASE_TAG" "$asset" --clobber; then
+                return 0
+              fi
+
+              sleep "$((attempt * 10))"
+              if asset_uploaded "$asset"; then
+                echo "gh release upload reported failure, but $asset is present"
+                return 0
+              fi
+
+              echo "Upload attempt $attempt failed for $asset"
             done
+
+            return 1
           }
 
           nix develop .#ci -c gh release view "$RELEASE_TAG"
-          if ! nix develop .#ci -c gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber; then
-            echo "gh release upload failed; checking whether the assets were uploaded anyway"
-            verify_uploaded_assets
-          fi
+          for asset in "${assets[@]}"; do
+            upload_asset "$asset"
+          done
 
   publish-lima-template:
     name: Publish Lima template
