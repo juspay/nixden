@@ -88,7 +88,7 @@ list:
 # Open a shell in the VM
 [group('access')]
 shell:
-    {{nix_shell}} limactl shell {{name}}
+    {{nix_shell}} limactl shell --workdir=. {{name}}
 
 # Print Lima's generated SSH config for the VM
 [group('access')]

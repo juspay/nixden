@@ -15,7 +15,7 @@ Run `nix develop` once to enter a shell with `lima`, `just`, and `gh` pinned, or
 just              # list recipes
 just start        # create + boot the VM from the latest release image
 just start dev    # create + boot the VM from the mutable dev release image
-just shell        # open a shell in the VM
+just shell        # open a shell in the VM, starting in the guest home
 just stop         # stop the VM
 just delete       # remove the VM
 just delete-downloaded-images dev # clear cached Lima image downloads for dev
