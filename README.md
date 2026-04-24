@@ -1,6 +1,6 @@
 # nixden
 
-NixOS based nixden on macOS — a [`justfile`](justfile) + flake that boots and provisions a customized NixOS VM via [Lima](https://lima-vm.io/).
+Isolated NixOS-based devbox for Mac users and others — a [`justfile`](justfile) + flake that boots and provisions a customized NixOS VM via [Lima](https://lima-vm.io/).
 
 ## Requirements
 
