@@ -28,7 +28,15 @@ default:
 # Create and start the NixOS VM from a release image
 [group('lifecycle')]
 start release="latest":
-    {{nix_shell}} limactl start --name={{name}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "https://github.com/juspay/devbox/releases/{{release}}/download/devbox-lima.yaml"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    release="{{release}}"
+    if [ "$release" = "latest" ]; then
+      template_url="https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml"
+    else
+      template_url="https://github.com/juspay/devbox/releases/download/$release/devbox-lima.yaml"
+    fi
+    {{nix_shell}} limactl start --name={{name}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "$template_url"
 
 # `--workdir /tmp` keeps CWD off Lima's Users-<user> 9p mount so that
 # switch-to-configuration can restart that mount unit cleanly.
