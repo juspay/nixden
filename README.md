@@ -14,17 +14,19 @@ Run `nix develop` once to enter a shell with `lima`, `just`, and `gh` pinned, or
 ```sh
 just              # list recipes
 just start        # create + boot the VM from the latest release image
+just start dev    # create + boot the VM from the mutable dev release image
 just provision    # re-apply the flake (after editing config)
 just shell        # open a shell in the VM
 just stop         # stop the VM
 just delete       # remove the VM
+just destroy      # stop + remove the VM
 just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
 First `just start` downloads and boots the latest `juspay/devbox` GitHub release template. That template keeps the locked `nixos-lima` defaults for mounts, memory, and port forwarding, and points at the matching devbox qcow2 assets with SHA-512 digests.
 
-The VM name defaults to `devbox`, and the guest user defaults to your macOS `$USER`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
+The VM name is `devbox`, and the guest user defaults to your macOS `$USER`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
 ## What's in the VM
 
@@ -34,7 +36,7 @@ Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, [`nixos-vscode-ser
 
 The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which uses the `ci` dev shell to upload `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, matching SHA-512 files, and `devbox-lima.yaml` to that release.
 
-`just start` uses `https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml`. Use `just provision` only when you want to apply local checkout changes to an existing VM with `nixos-rebuild switch`.
+`just start` uses `https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml`; `just start dev` uses `https://github.com/juspay/devbox/releases/dev/download/devbox-lima.yaml`. Use `just provision` only when you want to apply local checkout changes to an existing VM with `nixos-rebuild switch`.
 
 ## Cutting a release
 

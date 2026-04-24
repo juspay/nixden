@@ -1,6 +1,5 @@
 nix_shell := if env('IN_NIX_SHELL', '') != '' { '' } else { 'nix develop -c' }
 name := "devbox"
-template_url := "https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml"
 
 # CPUs = host logical cores − 2 (leave a couple for the host). CPU
 # over-subscription is cheap — the host scheduler time-slices — so we
@@ -26,34 +25,40 @@ default:
 # The latest release publishes a ready-to-use Lima template with image
 # URLs and SHA-512 digests baked in.
 
-# Create and start the NixOS VM from the latest release image
+# Create and start the NixOS VM from a release image
 [group('lifecycle')]
-start vm=name:
-    {{nix_shell}} limactl start --name={{vm}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "{{template_url}}"
+start release="latest":
+    {{nix_shell}} limactl start --name={{name}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "https://github.com/juspay/devbox/releases/{{release}}/download/devbox-lima.yaml"
 
 # `--workdir /tmp` keeps CWD off Lima's Users-<user> 9p mount so that
 # switch-to-configuration can restart that mount unit cleanly.
 
 # Apply our NixOS config inside the VM (idempotent)
 [group('lifecycle')]
-provision vm=name:
-    {{nix_shell}} limactl shell --workdir /tmp {{vm}} -- sudo nixos-rebuild switch --flake $(pwd)#devbox
+provision:
+    {{nix_shell}} limactl shell --workdir /tmp {{name}} -- sudo nixos-rebuild switch --flake $(pwd)#devbox
 
 # Stop the VM
 [group('lifecycle')]
-stop vm=name:
-    {{nix_shell}} limactl stop {{vm}}
+stop:
+    {{nix_shell}} limactl stop {{name}}
 
 # Remove the VM (destructive)
 [group('lifecycle')]
-delete vm=name:
-    {{nix_shell}} limactl delete {{vm}}
+delete:
+    {{nix_shell}} limactl delete {{name}}
+
+# Stop and remove the VM (destructive)
+[group('lifecycle')]
+destroy:
+    -just stop
+    just delete
 
 # Wipe the VM and start fresh (leading `-` tolerates a non-existent VM)
 [group('lifecycle')]
-recreate vm=name:
-    -{{nix_shell}} limactl delete --force {{vm}}
-    just start {{vm}}
+recreate release="latest":
+    -{{nix_shell}} limactl delete --force {{name}}
+    just start {{release}}
 
 # List all Lima VMs
 [group('lifecycle')]
@@ -64,13 +69,13 @@ list:
 
 # Open a shell in the VM
 [group('access')]
-shell vm=name:
-    {{nix_shell}} limactl shell {{vm}}
+shell:
+    {{nix_shell}} limactl shell {{name}}
 
 # Print Lima's generated SSH config for the VM
 [group('access')]
-ssh-config vm=name:
-    {{nix_shell}} limactl show-ssh --format=config {{vm}}
+ssh-config:
+    {{nix_shell}} limactl show-ssh --format=config {{name}}
 
 # SSH into the VM using Lima's generated config (no global config mutation)
 [group('access')]
