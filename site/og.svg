@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="nixden — prebuilt NixOS on Lima">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.05  0 0 0 0.14 0"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="#f1ebdd"/>
+
+  <!-- hairline grid -->
+  <g stroke="#141210" stroke-opacity="0.045" stroke-width="1">
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+  </g>
+
+  <!-- paper grain -->
+  <rect width="1200" height="630" filter="url(#grain)" opacity="0.4" style="mix-blend-mode:multiply"/>
+
+  <!-- masthead rule + meta -->
+  <line x1="72" y1="96" x2="1128" y2="96" stroke="#141210" stroke-width="1"/>
+  <text x="72" y="76" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" letter-spacing="2.4" fill="#6b5f52">NIXDEN &#160;&#183;&#160; VOL. 01 &#160;&#183;&#160; PREBUILT NIXOS &#160;&#183;&#160; RUNTIME LIMA</text>
+
+  <!-- eyebrow -->
+  <line x1="72" y1="196" x2="112" y2="196" stroke="#c14a1b" stroke-width="1"/>
+  <text x="128" y="201" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" letter-spacing="4" fill="#c14a1b">PREBUILT NIXOS ON LIMA</text>
+
+  <!-- wordmark -->
+  <text x="72" y="420" font-family="'Fraunces', 'Times New Roman', Georgia, serif" font-style="italic" font-weight="400" font-size="248" letter-spacing="-8" fill="#141210">nix<tspan fill="#c14a1b">den</tspan></text>
+
+  <!-- lead -->
+  <text x="76" y="488" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" fill="#2a2520">A NixOS VM, ready to run.</text>
+
+  <!-- bottom rule + meta -->
+  <line x1="72" y1="548" x2="1128" y2="548" stroke="#141210" stroke-width="1"/>
+  <text x="72" y="580" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" letter-spacing="2.8" fill="#6b5f52">JUSPAY &#160;/&#160; NIXDEN</text>
+  <text x="1128" y="580" text-anchor="end" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" letter-spacing="2.8" fill="#6b5f52">&#167; 01</text>
+</svg>
