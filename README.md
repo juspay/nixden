@@ -7,7 +7,7 @@ NixOS based devbox on macOS — a [`justfile`](justfile) + flake that boots and 
 - [Nix](https://nixos.asia/en/install) (everything else comes from the devShell)
 - [`just`](https://github.com/casey/just)
 
-Run `nix develop` once to enter a shell with `lima`, `just`, `jq`, `yq`, and `gh` pinned, or let each recipe invoke `nix develop -c` automatically.
+Run `nix develop` once to enter a shell with `lima`, `just`, and `gh` pinned, or let each recipe invoke `nix develop -c` automatically.
 
 ## Usage
 
@@ -22,7 +22,7 @@ just recreate     # wipe and start fresh
 just list         # list all Lima VMs
 ```
 
-First `just start` downloads and boots the latest `juspay/devbox` GitHub release image for your Mac's architecture. The generated Lima template keeps the locked `nixos-lima` defaults for mounts, memory, and port forwarding, but replaces the stock image URLs with the latest devbox release assets and their SHA-512 digests.
+First `just start` downloads and boots the latest `juspay/devbox` GitHub release template. That template keeps the locked `nixos-lima` defaults for mounts, memory, and port forwarding, and points at the matching devbox qcow2 assets with SHA-512 digests.
 
 The VM name defaults to `devbox`, and the guest user defaults to your macOS `$USER`. CPU / memory / disk default to `host cores − 2`, `host RAM − 4 GiB`, and `half of host free disk`. Memory is a ceiling (the vz driver demand-pages from the host); disk is a ceiling (Lima's qcow2 is sparse and grows lazily); CPU over-subscription is cheap. Override any default with `just --set`, e.g. `just --set cpus 4 --set memory 16 --set disk 200 start`.
 
@@ -32,9 +32,9 @@ Via [`nixos/devbox.nix`](nixos/devbox.nix): `nix-ld`, flakes, [`nixos-vscode-ser
 
 ## Release images
 
-The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which uses the `ci` dev shell to upload `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, and matching SHA-512 files to that release.
+The flake can build baked Lima-compatible qcow2 images from `nixosConfigurations.devbox-aarch64.config.system.build.images.qemu-efi` and `nixosConfigurations.devbox-x86_64.config.system.build.images.qemu-efi`. Publishing a GitHub release triggers the release-image workflow, which uses the `ci` dev shell to upload `devbox-<tag>-aarch64.qcow2`, `devbox-<tag>-x86_64.qcow2`, matching SHA-512 files, and `devbox-lima.yaml` to that release.
 
-`just start` uses the latest published image. Use `just provision` only when you want to apply local checkout changes to an existing VM with `nixos-rebuild switch`.
+`just start` uses `https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml`. Use `just provision` only when you want to apply local checkout changes to an existing VM with `nixos-rebuild switch`.
 
 ## Cutting a release
 
@@ -44,13 +44,15 @@ After merging release-image changes, create a GitHub release:
 just release v0.1.0
 ```
 
-Publishing the release starts the `Release Images` workflow. The workflow builds and compresses the x86_64 image on the self-hosted `x86_64-linux` runner and the aarch64 image on GitHub's `ubuntu-24.04-arm` runner, then uploads the qcow2 and SHA-512 assets to the release.
+Publishing the release starts the `Release Images` workflow. The workflow builds and compresses the x86_64 image on the self-hosted `x86_64-linux` runner and the aarch64 image on GitHub's `ubuntu-24.04-arm` runner, then uploads the qcow2, SHA-512, and Lima template assets to the release.
 
 To rerun uploads for an existing release after this workflow is on `main`:
 
 ```sh
 just release-images v0.1.0
 ```
+
+Rerunning the workflow also regenerates `devbox-lima.yaml`, which is useful when backfilling the template asset for an existing release.
 
 ## Security model
 

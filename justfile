@@ -1,5 +1,6 @@
 nix_shell := if env('IN_NIX_SHELL', '') != '' { '' } else { 'nix develop -c' }
 name := "devbox"
+template_url := "https://github.com/juspay/devbox/releases/latest/download/devbox-lima.yaml"
 
 # CPUs = host logical cores − 2 (leave a couple for the host). CPU
 # over-subscription is cheap — the host scheduler time-slices — so we
@@ -22,20 +23,13 @@ default:
 
 # --- Lifecycle ---
 
-# We render the Lima template from our locked `nixos-lima` flake input,
-# replacing its stock image list with the latest `juspay/devbox` release
-# images and their SHA-512 digests.
+# The latest release publishes a ready-to-use Lima template with image
+# URLs and SHA-512 digests baked in.
 
 # Create and start the NixOS VM from the latest release image
 [group('lifecycle')]
 start vm=name:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    template="$(mktemp -t devbox-lima.XXXXXX.yaml)"
-    trap 'rm -f "$template"' EXIT
-    base_template="$({{nix_shell}} nix build --no-link --print-out-paths .#lima-template)"
-    {{nix_shell}} scripts/render-lima-template.sh "$base_template" > "$template"
-    {{nix_shell}} limactl start --name={{vm}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "$template"
+    {{nix_shell}} limactl start --name={{vm}} --cpus={{cpus}} --memory={{memory}} --disk={{disk}} --yes "{{template_url}}"
 
 # `--workdir /tmp` keeps CWD off Lima's Users-<user> 9p mount so that
 # switch-to-configuration can restart that mount unit cleanly.

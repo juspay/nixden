@@ -33,7 +33,9 @@
             packages = with pkgs; [
               coreutils
               gh
+              jq
               qemu
+              yq-go
             ];
           };
         });
