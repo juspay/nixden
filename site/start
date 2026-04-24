@@ -1,0 +1,384 @@
+#!/bin/sh
+set -eu
+
+repo="juspay/nixden"
+name="${NIXDEN_NAME:-nixden}"
+tag="${NIXDEN_TAG:-latest}"
+template_url="${NIXDEN_TEMPLATE_URL:-}"
+transfer_dir="${NIXDEN_TRANSFER_DIR:-/tmp/lima-nixden}"
+cpus="${NIXDEN_CPUS:-}"
+memory="${NIXDEN_MEMORY:-}"
+disk="${NIXDEN_DISK:-}"
+auto_size=1
+cpus_explicit=0
+memory_explicit=0
+disk_explicit=0
+
+[ -n "${NIXDEN_CPUS:-}" ] && cpus_explicit=1
+[ -n "${NIXDEN_MEMORY:-}" ] && memory_explicit=1
+[ -n "${NIXDEN_DISK:-}" ] && disk_explicit=1
+
+if [ "${NIXDEN_LIMA_DEFAULTS:-}" = "1" ]; then
+  auto_size=0
+fi
+
+if [ "${NIXDEN_COLOR:-}" = "1" ]; then
+  use_color=1
+elif [ "${NIXDEN_COLOR:-}" = "0" ] || [ "${NO_COLOR:-}" ]; then
+  use_color=0
+elif [ -t 1 ]; then
+  use_color=1
+else
+  use_color=0
+fi
+
+if [ "$use_color" = "1" ]; then
+  bold="$(printf '\033[1m')"
+  dim="$(printf '\033[2m')"
+  blue="$(printf '\033[34m')"
+  green="$(printf '\033[32m')"
+  yellow="$(printf '\033[33m')"
+  red="$(printf '\033[31m')"
+  reset="$(printf '\033[0m')"
+else
+  bold=""
+  dim=""
+  blue=""
+  green=""
+  yellow=""
+  red=""
+  reset=""
+fi
+
+phase_no=0
+
+say() {
+  printf '%s\n' "$*"
+}
+
+phase() {
+  phase_no=$((phase_no + 1))
+  printf '\n%s[%s]%s %s%s%s\n' "$blue" "$phase_no" "$reset" "$bold" "$*" "$reset"
+}
+
+info() {
+  printf '  %s-%s %s\n' "$dim" "$reset" "$*"
+}
+
+ok() {
+  printf '  %sOK%s %s\n' "$green" "$reset" "$*"
+}
+
+warn() {
+  printf '  %s!%s %s\n' "$yellow" "$reset" "$*"
+}
+
+die() {
+  printf '%sError:%s %s\n' "$red" "$reset" "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+nixden starter
+
+Usage:
+  curl -fsSL https://juspay.github.io/nixden/start | sh -
+  curl -fsSL https://juspay.github.io/nixden/start | sh -s -- [options]
+
+Options:
+  --name NAME          Lima instance name (default: nixden)
+  --tag TAG            nixden release tag, or latest (default: latest)
+  --template-url URL   Full Lima template URL to use instead of --tag
+  --cpus N             Override CPU count
+  --memory GIB         Override memory in GiB
+  --disk GIB           Override disk size in GiB
+  --lima-defaults      Do not auto-size CPU, memory, or disk
+  -h, --help           Show this help
+
+Environment overrides:
+  NIXDEN_NAME, NIXDEN_TAG, NIXDEN_TEMPLATE_URL, NIXDEN_CPUS,
+  NIXDEN_MEMORY, NIXDEN_DISK, NIXDEN_TRANSFER_DIR,
+  NIXDEN_LIMA_DEFAULTS=1, NIXDEN_COLOR=0|1, NO_COLOR=1
+EOF
+}
+
+need_value() {
+  [ $# -ge 2 ] || die "missing value for $1"
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --name)
+      need_value "$@"
+      shift
+      name="$1"
+      ;;
+    --name=*)
+      name="${1#--name=}"
+      ;;
+    --tag)
+      need_value "$@"
+      shift
+      tag="$1"
+      ;;
+    --tag=*)
+      tag="${1#--tag=}"
+      ;;
+    --template-url)
+      need_value "$@"
+      shift
+      template_url="$1"
+      ;;
+    --template-url=*)
+      template_url="${1#--template-url=}"
+      ;;
+    --cpus)
+      need_value "$@"
+      shift
+      cpus="$1"
+      cpus_explicit=1
+      ;;
+    --cpus=*)
+      cpus="${1#--cpus=}"
+      cpus_explicit=1
+      ;;
+    --memory)
+      need_value "$@"
+      shift
+      memory="$1"
+      memory_explicit=1
+      ;;
+    --memory=*)
+      memory="${1#--memory=}"
+      memory_explicit=1
+      ;;
+    --disk)
+      need_value "$@"
+      shift
+      disk="$1"
+      disk_explicit=1
+      ;;
+    --disk=*)
+      disk="${1#--disk=}"
+      disk_explicit=1
+      ;;
+    --lima-defaults)
+      auto_size=0
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "unknown argument: $1"
+      ;;
+  esac
+  shift
+done
+
+floor_at() {
+  value="$1"
+  minimum="$2"
+  if [ "$value" -lt "$minimum" ]; then
+    printf '%s\n' "$minimum"
+  else
+    printf '%s\n' "$value"
+  fi
+}
+
+detect_cpus() {
+  if command -v sysctl >/dev/null 2>&1; then
+    n="$(sysctl -n hw.ncpu 2>/dev/null || true)"
+  else
+    n=""
+  fi
+  if [ -z "$n" ] && command -v getconf >/dev/null 2>&1; then
+    n="$(getconf _NPROCESSORS_ONLN 2>/dev/null || true)"
+  fi
+  case "$n" in
+    ''|*[!0-9]*) return 0 ;;
+  esac
+  floor_at "$((n - 2))" 1
+}
+
+detect_memory() {
+  bytes=""
+  if command -v sysctl >/dev/null 2>&1; then
+    bytes="$(sysctl -n hw.memsize 2>/dev/null || true)"
+  fi
+  if [ -n "$bytes" ]; then
+    gib="$((bytes / 1073741824 - 4))"
+    floor_at "$gib" 2
+    return 0
+  fi
+  if [ -r /proc/meminfo ]; then
+    kib="$(awk '/MemTotal:/ { print $2 }' /proc/meminfo)"
+    case "$kib" in
+      ''|*[!0-9]*) return 0 ;;
+    esac
+    gib="$((kib / 1024 / 1024 - 4))"
+    floor_at "$gib" 2
+  fi
+}
+
+detect_disk() {
+  free_kib="$(df -k / 2>/dev/null | awk 'NR==2 { print $4 }')"
+  case "$free_kib" in
+    ''|*[!0-9]*) return 0 ;;
+  esac
+  gib="$((free_kib / 1024 / 1024 / 2))"
+  floor_at "$gib" 32
+}
+
+gib_to_bytes() {
+  value="$1"
+  case "$value" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  printf '%s\n' "$((value * 1073741824))"
+}
+
+instance_exists() {
+  limactl list -q 2>/dev/null | grep -Fxq "$name"
+}
+
+instance_status() {
+  limactl list --format '{{.Status}}' "$name" 2>/dev/null || printf 'Unknown'
+}
+
+resource_mismatches() {
+  actual="$(limactl list --format '{{.CPUs}} {{.Memory}} {{.Disk}}' "$name" 2>/dev/null || true)"
+  [ -n "$actual" ] || return 0
+
+  set -- $actual
+  actual_cpus="${1:-}"
+  actual_memory="${2:-}"
+  actual_disk="${3:-}"
+
+  mismatch=0
+  if [ -n "$cpus" ] && [ -n "$actual_cpus" ] && [ "$actual_cpus" != "$cpus" ]; then
+    warn "Existing VM CPUs: $actual_cpus; requested: $cpus"
+    mismatch=1
+  fi
+
+  desired_memory="$(gib_to_bytes "$memory" 2>/dev/null || true)"
+  if [ -n "$desired_memory" ] && [ -n "$actual_memory" ] && [ "$actual_memory" != "$desired_memory" ]; then
+    warn "Existing VM memory: $((actual_memory / 1073741824)) GiB; requested: ${memory} GiB"
+    mismatch=1
+  fi
+
+  desired_disk="$(gib_to_bytes "$disk" 2>/dev/null || true)"
+  if [ "$disk_explicit" = "1" ] && [ -n "$desired_disk" ] && [ -n "$actual_disk" ] && [ "$actual_disk" != "$desired_disk" ]; then
+    warn "Existing VM disk: $((actual_disk / 1073741824)) GiB; requested: ${disk} GiB"
+    mismatch=1
+  fi
+
+  if [ "$mismatch" = "1" ]; then
+    warn "Existing Lima VMs keep their original resources."
+    warn "To recreate with requested resources:"
+    warn "  limactl delete $name"
+    warn "  curl -fsSL https://juspay.github.io/nixden/start | sh -"
+  fi
+}
+
+box_line() {
+  printf '%s\n' "  | $*"
+}
+
+say "${bold}nixden${reset}"
+
+phase "Checking requirements"
+if ! command -v limactl >/dev/null 2>&1; then
+  case "$(uname -s 2>/dev/null || true)" in
+    Darwin)
+      install_hint="brew install lima"
+      ;;
+    Linux)
+      install_hint="See https://lima-vm.io/docs/installation/ for Linux packages."
+      ;;
+    *)
+      install_hint="See https://lima-vm.io/docs/installation/."
+      ;;
+  esac
+  cat >&2 <<EOF
+Error: Lima is not installed.
+
+Install Lima first:
+  $install_hint
+
+Other installation options:
+  https://lima-vm.io/docs/installation/
+EOF
+  exit 1
+fi
+lima_path="$(command -v limactl)"
+ok "Lima installed: $(limactl --version 2>/dev/null || printf 'limactl found')"
+info "$lima_path"
+
+if [ -z "$template_url" ]; then
+  if [ "$tag" = "latest" ]; then
+    template_url="https://github.com/$repo/releases/latest/download/nixden-lima.yaml"
+  else
+    template_url="https://github.com/$repo/releases/download/$tag/nixden-lima.yaml"
+  fi
+fi
+ok "Release template selected"
+info "$template_url"
+
+phase "Choosing VM resources"
+if [ "$auto_size" = "1" ]; then
+  [ -n "$cpus" ] || cpus="$(detect_cpus || true)"
+  [ -n "$memory" ] || memory="$(detect_memory || true)"
+  [ -n "$disk" ] || disk="$(detect_disk || true)"
+  [ -n "$cpus" ] && ok "CPUs: $cpus" || warn "CPU count not detected; Lima default will be used"
+  [ -n "$memory" ] && ok "Memory: ${memory} GiB" || warn "Memory not detected; Lima default will be used"
+  [ -n "$disk" ] && ok "Disk: ${disk} GiB" || warn "Free disk not detected; Lima default will be used"
+else
+  ok "Using Lima's default CPU, memory, and disk sizing"
+fi
+
+phase "Preparing host"
+mkdir -p "$transfer_dir"
+ok "Transfer directory ready: $transfer_dir"
+
+phase "Starting nixden"
+if instance_exists; then
+  status="$(instance_status)"
+  ok "Found existing Lima instance \"$name\" ($status)"
+  resource_mismatches
+  if [ "$status" = "Running" ]; then
+    ok "VM already running"
+  else
+    info "Starting existing VM"
+    limactl start "$name"
+    ok "VM started"
+  fi
+else
+  info "Instance: $name"
+  info "Image: Lima will download it if it is not already cached"
+
+  set -- limactl start "--name=$name"
+  [ -n "$cpus" ] && set -- "$@" "--cpus=$cpus"
+  [ -n "$memory" ] && set -- "$@" "--memory=$memory"
+  [ -n "$disk" ] && set -- "$@" "--disk=$disk"
+  set -- "$@" "$template_url"
+  "$@"
+  ok "VM created and started"
+fi
+
+phase "Ready"
+ok "nixden is ready"
+say
+say "${bold}Next steps${reset}"
+say "  +------------------------------------------------------------"
+box_line "Open a shell:"
+box_line "  limactl shell --workdir=. $name"
+box_line ""
+box_line "Transfer files intentionally through:"
+box_line "  $transfer_dir"
+box_line ""
+box_line "Stop or delete the VM:"
+box_line "  limactl stop $name"
+box_line "  limactl delete $name"
+say "  +------------------------------------------------------------"

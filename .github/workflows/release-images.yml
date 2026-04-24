@@ -24,12 +24,12 @@ jobs:
         include:
           - guest-system: x86_64-linux
             guest-arch: x86_64
-            config: devbox-x86_64
+            config: nixden-x86_64
             runner: x86_64-linux
             install-nix: false
           - guest-system: aarch64-linux
             guest-arch: aarch64
-            config: devbox-aarch64
+            config: nixden-aarch64
             runner: ubuntu-24.04-arm
             install-nix: true
     env:
@@ -57,7 +57,7 @@ jobs:
           set -euo pipefail
           image_file="$(nix eval --raw "$IMAGE_ATTR.passthru.filePath")"
           src="result-${{ matrix.guest-arch }}/$image_file"
-          dst="devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
+          dst="nixden-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
           nix develop .#ci -c qemu-img convert -O qcow2 -c "$src" "$dst"
           nix develop .#ci -c sha512sum "$dst" > "$dst.sha512"
 
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-metadata-${{ matrix.guest-arch }}
-          path: devbox-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2.sha512
+          path: nixden-${{ env.RELEASE_TAG }}-${{ matrix.guest-arch }}.qcow2.sha512
           if-no-files-found: error
 
       - name: Upload image to release
@@ -89,8 +89,8 @@ jobs:
           }
 
           nix develop .#ci -c gh release view "$RELEASE_TAG"
-          upload_asset "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
-          upload_asset "devbox-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512"
+          upload_asset "nixden-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2"
+          upload_asset "nixden-${RELEASE_TAG}-${{ matrix.guest-arch }}.qcow2.sha512"
 
   publish-lima-template:
     name: Publish Lima template
@@ -119,7 +119,7 @@ jobs:
 
           sha_for() {
             local arch=$1
-            local file="devbox-${RELEASE_TAG}-${arch}.qcow2.sha512"
+            local file="nixden-${RELEASE_TAG}-${arch}.qcow2.sha512"
             awk '{ print $1 }' "$file"
           }
 
@@ -131,23 +131,23 @@ jobs:
               --arg x86_64_sha "$(sha_for x86_64)" \
               '[
                 {
-                  location: ($base + "/devbox-" + $tag + "-aarch64.qcow2"),
+                  location: ($base + "/nixden-" + $tag + "-aarch64.qcow2"),
                   arch: "aarch64",
                   digest: ("sha512:" + $aarch64_sha)
                 },
                 {
-                  location: ($base + "/devbox-" + $tag + "-x86_64.qcow2"),
+                  location: ($base + "/nixden-" + $tag + "-x86_64.qcow2"),
                   arch: "x86_64",
                   digest: ("sha512:" + $x86_64_sha)
                 }
               ]'
           )"
 
-          COMMENT="Generated from juspay/devbox ${RELEASE_TAG}" \
+          COMMENT="Generated from juspay/nixden ${RELEASE_TAG}" \
             IMAGES="$images_json" \
-            yq -P '.images = env(IMAGES) | . headComment = strenv(COMMENT)' "$base_template" > devbox-lima.yaml
+            yq -P '.images = env(IMAGES) | . headComment = strenv(COMMENT)' "$base_template" > nixden-lima.yaml
 
-          sha512sum devbox-lima.yaml > devbox-lima.yaml.sha512
+          sha512sum nixden-lima.yaml > nixden-lima.yaml.sha512
           EOF
 
       - name: Upload Lima template to release
@@ -158,6 +158,6 @@ jobs:
           set -euo pipefail
           nix develop .#ci -c gh release view "$RELEASE_TAG"
           nix develop .#ci -c gh release upload "$RELEASE_TAG" \
-            devbox-lima.yaml \
-            devbox-lima.yaml.sha512 \
+            nixden-lima.yaml \
+            nixden-lima.yaml.sha512 \
             --clobber

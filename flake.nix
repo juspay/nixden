@@ -1,5 +1,5 @@
 {
-  description = "devbox: NixOS based devbox on macOS (custom NixOS on Lima)";
+  description = "nixden: NixOS based nixden on macOS (custom NixOS on Lima)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -25,7 +25,7 @@
       forEach = nixpkgs.lib.genAttrs;
       base = import ./default.nix inputs;
       limaMessage = ''
-        devbox is ready.
+        nixden is ready.
 
         Open a shell:
           limactl shell --workdir=. {{.Name}}
@@ -33,7 +33,7 @@
         This template intentionally does not mount your macOS home directory.
         Clone repositories inside the VM, for example under ~/code.
 
-        To transfer files intentionally, use /tmp/lima-devbox on the host and
+        To transfer files intentionally, use /tmp/lima-nixden on the host and
         inside the VM.
       '';
     in
@@ -57,22 +57,22 @@
       # with a narrow scratch directory for explicit file transfer.
       packages = forEach systems (system:
         let pkgs = nixpkgs.legacyPackages.${system}; in {
-          lima-template = pkgs.runCommand "devbox-lima-template" {
+          lima-template = pkgs.runCommand "nixden-lima-template" {
             nativeBuildInputs = [ pkgs.yq-go ];
-            DEVBOX_MESSAGE = limaMessage;
+            NIXDEN_MESSAGE = limaMessage;
           } ''
             yq -P '
               .mounts = [
                 {
-                  "location": "/tmp/lima-devbox",
-                  "mountPoint": "/tmp/lima-devbox",
+                  "location": "/tmp/lima-nixden",
+                  "mountPoint": "/tmp/lima-nixden",
                   "writable": true,
                   "9p": {
                     "cache": "mmap"
                   }
                 }
               ]
-              | .message = strenv(DEVBOX_MESSAGE)
+              | .message = strenv(NIXDEN_MESSAGE)
             ' ${nixos-lima}/.lima.yaml > $out
           '';
         });
