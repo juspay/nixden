@@ -55,6 +55,12 @@
       # Lima template YAML, pinned to our locked nixos-lima input. Keep the
       # nixos-lima guest integration defaults, but replace broad host mounts
       # with a narrow scratch directory for explicit file transfer.
+      #
+      # Rosetta is enabled unconditionally: on macOS 13+ Apple Silicon hosts
+      # this lets the aarch64 guest run x86_64 Linux binaries at near-native
+      # speed via binfmt_misc. Intel Macs and Linux hosts ignore the field,
+      # so it is safe to always emit. Requires the vz driver (the upstream
+      # nixos-lima default).
       packages = forEach systems (system:
         let pkgs = nixpkgs.legacyPackages.${system}; in {
           lima-template = pkgs.runCommand "nixden-lima-template" {
@@ -72,6 +78,8 @@
                   }
                 }
               ]
+              | .vmOpts.vz.rosetta.enabled = true
+              | .vmOpts.vz.rosetta.binfmt = true
               | .message = strenv(NIXDEN_MESSAGE)
             ' ${nixos-lima}/.lima.yaml > $out
           '';
