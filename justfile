@@ -4,12 +4,20 @@ name := "nixden"
 # CPUs = host logical cores − 2 (leave a couple for the host). CPU
 # over-subscription is cheap — the host scheduler time-slices — so we
 # can be generous. Override: `just --set cpus 4 start`.
-cpus := `echo $(( $(sysctl -n hw.ncpu) - 2 ))`
+cpus := if os() == "macos" {
+  `echo $(( $(sysctl -n hw.ncpu) - 2 ))`
+} else {
+  `echo $(( $(nproc) - 2 ))`
+}
 
 # Memory ceiling in GiB = host RAM − 4 GiB. With the vz driver the host
 # demand-pages guest memory, so this is a cap, not an up-front allocation.
 # Override: `just --set memory 16 start`.
-memory := `echo $(( $(sysctl -n hw.memsize) / 1073741824 - 4 ))`
+memory := if os() == "macos" {
+  `echo $(( $(sysctl -n hw.memsize) / 1073741824 - 4 ))`
+} else {
+  `echo $(( $(awk '/MemTotal:/ { print $2 }' /proc/meminfo) / 1024 / 1024 - 4 ))`
+}
 
 # Disk ceiling in GiB = half of host root-fs free space. Lima's qcow2 is
 # sparse, so the image only grows as the guest writes.
